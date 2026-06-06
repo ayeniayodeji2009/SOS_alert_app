@@ -1,0 +1,146 @@
+
+PYTHON Controls
+> setting up python vitual environment in folder - py -3.11 -m venv venv
+
+> Access postgre database via GUI - PG4
+
+> change backend environment to vitual - venv\Scripts\Activate.ps1
+
+> Start backend server - uvicorn main:app --
+
+
+
+
+
+
+
+
+
+
+
+
+POSTGRE Controls
+> start postgre server via CDM as admin - "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" start
+> stop postgre server via CDM as admin -  "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" stop
+> Check if postgre server is running - tasklist | findstr postgres
+> location to delete .pid file  -  C:\Program Files\PostgreSQL\17\data
+
+> 1. Kill duplicate processes if reconnection of backend and database server are not working
+Run:
+cmd
+taskkill /PID 19464 /F
+taskkill /PID 7132 /F
+
+
+Then restart your FastAPI app with a single instance:
+bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+
+Registration json
+{
+  "firstname": "lateef",
+  "lastname": "jako",
+  "username": "lateefja",
+  "email": "lateeja@gmail.com",
+  "phone_no": "09078634523",
+  "address": "2, kilanko street, orile",
+  "state": "lagos",
+  "country": "nigeria",
+  "blood_group": "AA",
+  "emergency_contact_name": "Nuru Jako",
+  "emergency_contact_phone": "09034523456"
+}
+
+
+
+INSERT INTO police_posts (name, phone, location) VALUES
+('Lagos State Police Command (Ikeja)', '08065154338', ST_GeomFromText('POINT(3.3500 6.5900)', 4326)),
+('Victoria Island Police Station', '08060357795', ST_GeomFromText('POINT(3.4244 6.4281)', 4326)),
+('Lekki Phase 1 Police Post', '08123821535', ST_GeomFromText('POINT(3.4830 6.4490)', 4326)),
+('Ajah Police Station', '08033011052', ST_GeomFromText('POINT(3.5670 6.4670)', 4326)),
+('Surulere Police Division', '08033038925', ST_GeomFromText('POINT(3.3560 6.5010)', 4326));
+
+
+
+
+2nd phase of app
+* There should be a dashboard for amotekun(Local security) having same data sent to police. If police attend to the issue by clicking on a "users sent in alert button to attend to it", should leave the amotekun's dashboard. If amotekun does same, it should leave police dashboard. These respective responses to the users from Police or Amotekun should be registered in the Admins dashboard
+* There should be a way to be sure if the SOS report from the user is genuine, when user click on SOS and its pending at the police side, Police should click on "Help on the way", then user recieves the reponse, with a new button to click on "Resolve" when Police arrive. After clicking on "resolve" button by user, 
+status at user side changes to "resolved"(Police recieves a triggered update to state that police team has arrived at the scene to handle the situation), and "delete" button from history section appear in Police dashboard. If clicked, it deletes from users history. it stores on both police history and admin history respectively and can be deleted at will respectively on admin backend and police backend. Just like Police dashboard, same goes for Amotekun dashboard
+* Get data of all police station and amotekun stations locations in Nigeria and store it to database
+* in map of police and amotekun, show the alert locations base on location cordinate of reporters or users with the name of user on the location point above it and the incident number.
+* in Admin dashboard, alert/report by user which is resolved by either  Police or Amotekun should be registered with details of who resolved it, date and time too.
+
+
+
+
+
+
+
+
+
+
+// mirror master 3, 2 mirror toilet, full lenth  3, mirror in wardrobe, 1 bar, 5 rugs, 1 3 seater, 1 2 seater, 1 single bed, 1 dressing table, 1 shoe rack, 1 dining table with 6 chairs, 1 coffee table, 1 tv stand, 1 bookshelf, 1 study desk with chair, 1 wardrobe, 1 chest of drawers, 1 bedside table with lamp, tv unit masters, 2 plan, mirror under staircase living room, painting, pop cover, master 1 paint, children 1 paint, living room - 3 white colour
+// spot light change masters living, childrens room, repositioning chandelier
+
+
+// study room: 1 book shelf, 1 office table, 1 office chair
+
+// master bed frame, 1 sofer, center table, 2 mirror, spot light,  1 curtin qnd 1 blind, 1 TV unit, 
+
+// living room, bar and 2 bar stool, 2 planter and white stone, dinning cladding and 2 irreglar mirror, painting , 6 seater dinning table and chair, 1 curtin, 1 window bind, chair to be determined, 2 rugs, center table
+
+// childrens room: 1 bed frame, reading table and chair, 1 curtin cost 200k,
+
+/** MASTER BEDROOM:
+ * 1 bed frame - 650k
+ * 1 sofer - 400k
+ * 1 center table - 350k
+ * 1 full length wall mirror - 150k
+ * 1 wardrobe mirror - 100k
+ * 1 toilet mirror - 50k
+ * 1 TV unit - 480k
+ * 
+ * 
+ */
+
+
+/**
+ * Children's ROOM:
+ * 1 bed frame - 550k
+ * 1 reading table - 400k
+ * 1 reading chair - 200k
+ */
+
+
+
+/** LIVING ROOM and DINNING ROOM:
+ * 1 bar - 700k
+ * 2 bar stool - 380k 
+ * 2 planter (1pc - 100k = 200k) and white stone under staircase (50k) - 250k,
+ * 1 dinning cladding - 750k
+ * 6 seater dinning table and chair - 1.2m
+ * 1 TV unit - 900k
+ * chair to be determined
+ * 1 center table - 450k
+ * 1 console table for Dinning - 450k
+ * 2 coffee table (1pc - 350k) - 700k 
+*/
+
+/** STUDY ROOM:
+  * 1 book shelf - 850k
+  * 1 office table - 600k
+  * 1 office chair - 280k
+*/
+
+/**
+ * GENERAL
+ * 5 rug for master bedroom - 1, madams room bedroom - 1, living room and dinning - 2(size 7by10, 1pc - 100k = 200k),  childrens room - 1(size 5by7 - 100k),
+ * 6 window blind for living room toilet, guest room toilet, kitchen, childrens toilet, madams room toilet, masters toilet,
+ * 5 curtins for master, living room, childrens room, madams room, guest room, 
+ * 12 mirror for masters room - 1, masters wardrobe - 1, masters toilet - 1, mirror for dinning wall cladding - 2, mirror for living room under staircase - 1, mirror for madams bedroom and toilet - 2, mirror for childrens bedroom and toilet - 2, mirror for guest room and toilet - 2
+ * Electrical works: spot light change, childrens room, repositioning chandelier in living room
+ * Painting and POP cover: master bedroom - 1 paint, childrens room - 1 paint, living room - 3 white colour paint
+ */

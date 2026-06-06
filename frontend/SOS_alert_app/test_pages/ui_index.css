@@ -1,0 +1,24 @@
+/* UI/UX Enhancements */
+.sos-button {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff4d4d 0%, #b30000 100%);
+  color: white;
+  border: 8px solid rgba(255,255,255,0.2);
+  box-shadow: 0 0 20px rgba(179,0,0,0.5);
+  animation: breathe 2s infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes breathe {
+  0% { transform: scale(1); box-shadow: 0 0 0px red; }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px red; }
+  100% { transform: scale(1); box-shadow: 0 0 0px red; }
+}
+
+.history-card.RESOLVED { border-left: 5px solid #10b981; }
+.history-card.PENDING { border-left: 5px solid #f59e0b; }
