@@ -6,7 +6,7 @@ PYTHON Controls
 
 > change backend environment to vitual - venv\Scripts\Activate.ps1
 
-> Start backend server - uvicorn main:app --
+> Start backend server - uvicorn main:app --reload
 
 
 
@@ -20,10 +20,29 @@ PYTHON Controls
 
 
 POSTGRE Controls
-> start postgre server via CDM as admin - "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" start
-> stop postgre server via CDM as admin -  "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" stop
+> start postgre server via CDM as admin - "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" start 
+< for my hp - net start postgresql-x64-17
+> stop postgre server via CDM as admin -  "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" stop 
+< for my hp - net stop postgresql-x64-17
 > Check if postgre server is running - tasklist | findstr postgres
 > location to delete .pid file  -  C:\Program Files\PostgreSQL\17\data
+
+
+
+frontend:
+start react vite - npm run dev
+
+
+backend:
+activate vitual environment - source venv/Scripts/activate
+
+
+
+
+
+
+
+
 
 > 1. Kill duplicate processes if reconnection of backend and database server are not working
 Run:
@@ -144,3 +163,10 @@ status at user side changes to "resolved"(Police recieves a triggered update to 
  * Electrical works: spot light change, childrens room, repositioning chandelier in living room
  * Painting and POP cover: master bedroom - 1 paint, childrens room - 1 paint, living room - 3 white colour paint
  */
+
+
+
+
+
+
+

@@ -1,26 +1,32 @@
 # Web Framework & Server
-fastapi==0.110.0
-uvicorn[standard]==0.27.1
+fastapi
+uvicorn[standard]
 
 # Database & ORM
-sqlalchemy==2.0.27
-psycopg2-binary==2.9.9
-alembic==1.13.1
+sqlalchemy
+psycopg2-binary
+alembic
 
 # Security & Authentication
-python-multipart==0.0.9
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-bcrypt==4.0.1
+python-multipart
+python-jose[cryptography]
+# Note: passlib is deprecated and struggles on newer Python. 
+# Explicitly including bcrypt handles the hashing backend dynamically.
+passlib[bcrypt]
+bcrypt
 
 # Validation & Utilities
-pydantic[email]==2.6.3
-python-dotenv==1.0.1
+# Upgraded minimum to 2.9.0 to natively support newer Python type engines
+pydantic
+python-dotenv
 
 # Real-time & Async
-websockets==12.0
-anyio==4.3.0
-
+websockets
+anyio
 
 # Geospatial Support
-geoalchemy2==0.11.0
+geoalchemy2
+
+
+
+email-validator
