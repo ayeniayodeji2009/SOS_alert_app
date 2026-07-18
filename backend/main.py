@@ -24,7 +24,9 @@ ALGORITHM = "HS256"
 
 app = FastAPI(title="Uncle Mayor SOS API")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+
 
 # Configure CORS
 app.add_middleware(
@@ -148,7 +150,6 @@ manager = ConnectionManager()
 #                     self.user_connections[alert_id].remove(connection)
 
 # manager = ConnectionManager()
-
 
 
 
