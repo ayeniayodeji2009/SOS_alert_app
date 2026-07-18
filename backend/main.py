@@ -26,13 +26,29 @@ app = FastAPI(title="Uncle Mayor SOS API")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",  # Your Vite/React development server
+        "http://localhost:3000",   # Alternative React dev server
+        #"https://your-frontend-name.onrender.com",  # Your Render frontend URL (replace with actual)
+        # You can also use ["*"] to allow all origins (not recommended for production)
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
+
+
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 
