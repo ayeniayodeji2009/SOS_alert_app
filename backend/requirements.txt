@@ -1,32 +1,15 @@
-# Web Framework & Server
 fastapi
 uvicorn[standard]
-
-# Database & ORM
 sqlalchemy
 psycopg2-binary
 alembic
-
-# Security & Authentication
 python-multipart
 python-jose[cryptography]
-# Note: passlib is deprecated and struggles on newer Python. 
-# Explicitly including bcrypt handles the hashing backend dynamically.
 passlib[bcrypt]
 bcrypt
-
-# Validation & Utilities
-# Upgraded minimum to 2.9.0 to natively support newer Python type engines
 pydantic
 python-dotenv
-
-# Real-time & Async
 websockets
 anyio
-
-# Geospatial Support
 geoalchemy2
-
-
-
 email-validator

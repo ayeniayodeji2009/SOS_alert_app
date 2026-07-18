@@ -22,6 +22,8 @@ PYTHON Controls
 POSTGRE Controls
 > start postgre server via CDM as admin - "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" start 
 < for my hp - net start postgresql-x64-17
+> HP postGRE local database server password - sos123
+> Dell postGRE local database server password - 8888
 > stop postgre server via CDM as admin -  "C:\Program Files\PostgreSQL\17\bin\pg_ctl.exe" -D "C:\Program Files\PostgreSQL\17\data" stop 
 < for my hp - net stop postgresql-x64-17
 > Check if postgre server is running - tasklist | findstr postgres
