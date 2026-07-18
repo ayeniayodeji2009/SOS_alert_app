@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: sos-alert-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://sos_db_prod_user:zageDUy61HBA4v2ZIK2MqCOfyAQt0cFv@dpg-d8rhidfavr4c73ejg6c0-a.frankfurt-postgres.render.com/sos_db_prod?sslmode=require
