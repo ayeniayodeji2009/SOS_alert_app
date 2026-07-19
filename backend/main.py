@@ -34,7 +34,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",  # Your Vite/React development server
         "http://localhost:3000",   # Alternative React dev server
-        #"https://your-frontend-name.onrender.com",  # Your Render frontend URL (replace with actual)
+        "https://sos-alert-app.vercel.app/",  # Your Render frontend URL (replace with actual)
+        "https://sos-alert-app-git-master-ayeniayodeji2009s-projects.vercel.app/",
+        "https://sos-alert-fuk2ippsz-ayeniayodeji2009s-projects.vercel.app/",
         # You can also use ["*"] to allow all origins (not recommended for production)
     ],
     allow_credentials=True,
