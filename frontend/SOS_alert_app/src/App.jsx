@@ -26,6 +26,7 @@ function App() {
                 <Navbar /> {/* Place it here */}
                 <Routes>
                     {/* Authentication */}
+                    <Route path="/" element={<UserDashboard />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
 
