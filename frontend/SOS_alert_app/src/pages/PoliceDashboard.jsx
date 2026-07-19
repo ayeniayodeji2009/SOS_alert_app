@@ -23,7 +23,9 @@ const PoliceDashboard = () => {
     fetchInitialData();
 
     // 2. WebSocket with safety check
-    let socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+    let socket = new WebSocket('ws://sos-alert-app-backend.onrender.com/ws/alerts');
+    // let socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+    //https://sos-alert-app-backend.onrender.com
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

@@ -15,7 +15,8 @@ const AmotekunDashboard = () => {
     };
     fetchAlerts();
 
-    let socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+    // let socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+    let socket = new WebSocket('ws://sos-alert-app-backend.onrender.com/ws/alerts');
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.event === "ALERT_CLAIMED" && data.claimed_by === "POLICE") {

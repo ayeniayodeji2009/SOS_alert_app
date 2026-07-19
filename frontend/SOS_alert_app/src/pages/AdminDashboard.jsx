@@ -46,7 +46,8 @@ const AdminDashboard = () => {
 
 
     useEffect(() => {
-        const socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+        //const socket = new WebSocket('ws://127.0.0.1:8000/ws/alerts');
+        const socket = new WebSocket('ws://sos-alert-app-backend.onrender.com/ws/alerts');
 
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);

@@ -10,7 +10,8 @@ const AlertHistory = ({ userId }) => {
         const fetchHistory = async () => {
             try {
                 // Adjust the URL to your FastAPI endpoint
-                const response = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
+                //const response = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
+                const response = await axios.get(`https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`);
                 setHistory(response.data);
             } catch (error) {
                 console.error("Error fetching alert history:", error);

@@ -13,7 +13,8 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
         
         try {
             console.log("Fetching alerts for user ID:", userId);
-            const res = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
+            const res = await axios.get(`https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`);
+            // const res = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
             console.log("Fetched alerts:", res.data);
             
             // Filter out deleted alerts if needed
@@ -68,8 +69,9 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                     ws.close();
                 }
                 
-                ws = new WebSocket('ws://localhost:8000/ws/alerts');
-                
+                // ws = new WebSocket('ws://localhost:8000/ws/alerts');
+                ws = new WebSocket('wss://sos-alert-app-backend.onrender.com/ws/alerts');
+
                 ws.onopen = () => {
                     if (isMounted) {
                         console.log("UserDashboard WebSocket Connected ✅");
@@ -139,7 +141,8 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
             console.log("Confirming arrival for alert:", alertId);
             
             const response = await axios.patch(
-                `http://localhost:8000/alerts/${alertId}/confirm-arrival`,
+                // `http://localhost:8000/alerts/${alertId}/confirm-arrival`,
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
                 {}, // Empty body - no data needed
                 {
                     headers: {

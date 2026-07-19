@@ -134,7 +134,8 @@ const RescueDashboard = ({ responderType }) => {
     // 1. Wrap fetchAlerts in useCallback so it doesn't change on every render
     const fetchAlerts = useCallback(async () => {
         try {
-            const response = await axios.get('http://localhost:8000/alerts');
+            // const response = await axios.get('http://localhost:8000/alerts');
+            const response = await axios.get('https://sos-alert-app-backend.onrender.com/alerts');
             setAlerts(response.data);
         } catch (err) {
             // console.error("Error fetching alerts:", err.response?.status === 404 ? "Route not found on backend!" : err.message);
@@ -161,8 +162,9 @@ const RescueDashboard = ({ responderType }) => {
         
         const connectWebSocket = () => {
             try {
-                ws = new WebSocket('ws://localhost:8000/ws/alerts');
-                
+                // ws = new WebSocket('ws://localhost:8000/ws/alerts');
+                ws = new WebSocket('ws://sos-alert-app-backend.onrender.com/ws/alerts');
+
                 ws.onopen = () => {
                     console.log("WebSocket Connected ✅");
                     // Clear any reconnect timer on successful connection
@@ -355,7 +357,8 @@ const RescueDashboard = ({ responderType }) => {
             console.log("Location:", myLocation);
 
             const response = await axios.patch(
-                `http://localhost:8000/alerts/${alertId}/respond`,
+                // `http://localhost:8000/alerts/${alertId}/respond`,
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/respond`,
                 payload,
                 {
                     headers: {
@@ -400,7 +403,8 @@ const RescueDashboard = ({ responderType }) => {
 
     const handleResolve = async (alertId) => {
         try {
-            await axios.patch(`http://localhost:8000/alerts/${alertId}/resolve`);
+            // await axios.patch(`http://localhost:8000/alerts/${alertId}/resolve`);
+            await axios.patch(`https://sos-alert-app-backend.onrender.com/alerts/${alertId}/resolve`);
             fetchAlerts();
         } catch (err) {
             console.error("Resolve error:", err);

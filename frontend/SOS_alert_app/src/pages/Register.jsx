@@ -13,7 +13,7 @@ const Register = () => {
 
 
     
-    
+    console.log(api); // Step 1: Check if api is defined
     const navigate = useNavigate();
 
     // const handleSubmit = async (e) => {
