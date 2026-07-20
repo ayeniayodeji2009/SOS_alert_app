@@ -42,7 +42,8 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                 lon: pos.coords.longitude 
             };
             try {
-                const res = await axios.post('http://localhost:8000/alerts/trigger', payload);
+                // const res = await axios.post('http://localhost:8000/alerts/trigger', payload);
+                const res = await axios.post('https://sos-alert-app-backend.onrender.com/alerts/trigger', payload);
                 alert(`SOS SENT! Nearest Station: ${res.data.nearest_station}`);
                 await fetchMyAlerts(); 
             } catch (err) {
