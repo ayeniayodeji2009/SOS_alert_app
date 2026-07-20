@@ -216,10 +216,21 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_d
     hashed_pw = pwd_context.hash(user.password)
     user_dict = user.model_dump(exclude={"password"})
     new_user = models.User(**user_dict, hashed_password=hashed_pw)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    # db.add(new_user)
+    # db.commit()
+    # db.refresh(new_user)
+    # return new_user
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="A user with this phone number or email already exists"
+        )
 
 @app.post("/users/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
