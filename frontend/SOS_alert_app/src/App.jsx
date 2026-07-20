@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthProvider';
 import { useContext } from 'react';
 import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
 // import PoliceDashboard from './pages/PoliceDashboard';
@@ -26,7 +27,7 @@ function App() {
                 <Navbar /> {/* Place it here */}
                 <Routes>
                     {/* Authentication */}
-                    <Route path="/" element={<UserDashboard />} />
+                    <Route path="/" element={<HomePage />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
 
