@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define database URLs
-RENDER_DATABASE_URL = "postgresql://sos_db_prod_user:zageDUy61HBA4v2ZIK2MqCOfyAQt0cFv@dpg-d8rhidfavr4c73ejg6c0-a.frankfurt-postgres.render.com/sos_db_prod?sslmode=require"
+RENDER_DATABASE_URL = "postgresql://sos_db_prod_asv3_user:dUji82gDrxnWOdWhIfZJBPVMf6OIUcx9@dpg-d9h19aurnols73eu50pg-a.frankfurt-postgres.render.com/sos_db_prod_asv3?sslmode=require"
 LOCAL_DATABASE_URL = "postgresql://postgres:sos123@localhost:5432/sos_db"
 
 def get_database_url():
