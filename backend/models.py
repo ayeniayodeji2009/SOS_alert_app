@@ -137,7 +137,7 @@ class PolicePost(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     area_command = Column(String, nullable=False)
-    phone_no = Column(String, nullable=False) # ✅ Geography for accurate distance calculations
+    phone_no = Column(String, nullable=False)
     location = Column(Geography(geometry_type='POINT', srid=4326), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
