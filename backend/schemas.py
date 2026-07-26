@@ -108,7 +108,22 @@ class ResponderUpdate(BaseModel):
 
 
 
+class PolicePostBase(BaseModel):
+    name: str
+    area_command: str  # ✅ Add this field
+    phone_no: str
+    latitude: float
+    longitude: float
 
+class PolicePostCreate(PolicePostBase):
+    pass
+
+class PolicePost(PolicePostBase):
+    id: int
+    created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
 
 
 
