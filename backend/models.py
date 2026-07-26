@@ -131,16 +131,6 @@ class EmergencyContact(Base):
 
 
 
-# Add this to your models.py
-# class PolicePost(Base):
-#     __tablename__ = "police_posts"
-#     id = Column(Integer, primary_key=True, index=True)
-#     name = Column(String, index=True)
-#     phone = Column(String)
-#     # This stores the GPS point (Longitude, Latitude)
-#     location = Column(Geography(geometry_type='POINT', srid=4326))
-
-
 class PolicePost(Base):
     __tablename__ = "police_posts"
 
@@ -153,6 +143,15 @@ class PolicePost(Base):
 
 
 
+
+# Add this to your models.py
+# class PolicePost(Base):
+#     __tablename__ = "police_posts"
+#     id = Column(Integer, primary_key=True, index=True)
+#     name = Column(String, index=True)
+#     phone = Column(String)
+#     # This stores the GPS point (Longitude, Latitude)
+#     location = Column(Geography(geometry_type='POINT', srid=4326))
 
 
 
