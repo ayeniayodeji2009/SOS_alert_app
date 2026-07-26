@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from geoalchemy2 import Geography
