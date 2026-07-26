@@ -131,12 +131,13 @@ class EmergencyContact(Base):
 
 
 
+
 class PolicePost(Base):
     __tablename__ = "police_posts"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
-    area_command = Column(String, nullable=False)  # Keep this for grouping
-    phone_no = Column(String, nullable=False)  # ✅ Geography for accurate distance calculations
+    area_command = Column(String, nullable=False)
+    phone_no = Column(String, nullable=False) # ✅ Geography for accurate distance calculations
     location = Column(Geography(geometry_type='POINT', srid=4326), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
