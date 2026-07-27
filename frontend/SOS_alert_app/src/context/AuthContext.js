@@ -1,48 +1,35 @@
-// context/AuthContext.jsx
-import React from 'react';
+// context/AuthContext.jsx - Functional version with no JSX issues
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Create the context
 const AuthContext = React.createContext();
 
-// Provider component
-export class AuthProvider extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            user: null,
-            token: null,
-            loading: true
-        };
-    }
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    componentDidMount() {
-        // Check localStorage on mount
+    useEffect(() => {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
         
         if (storedToken && storedUser) {
             try {
                 const userData = JSON.parse(storedUser);
-                this.setState({
-                    token: storedToken,
-                    user: userData,
-                    loading: false
-                });
+                setToken(storedToken);
+                setUser(userData);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
                 console.log('✅ Restored user session:', userData);
             } catch (e) {
                 console.error('Error parsing stored user:', e);
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                this.setState({ loading: false });
             }
-        } else {
-            this.setState({ loading: false });
         }
-    }
+        setLoading(false);
+    }, []);
 
-    login = async (username, password) => {
+    const login = async (username, password) => {
         try {
             console.log('🔐 AuthContext: Logging in user:', username);
             
@@ -64,7 +51,6 @@ export class AuthProvider extends React.Component {
                 throw new Error('Invalid user data received from server');
             }
             
-            // Store in localStorage
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             
@@ -74,10 +60,8 @@ export class AuthProvider extends React.Component {
             
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
-            this.setState({
-                token: token,
-                user: user
-            });
+            setToken(token);
+            setUser(user);
             
             console.log('✅ AuthContext: User stored successfully:', {
                 id: user.id,
@@ -92,55 +76,48 @@ export class AuthProvider extends React.Component {
             
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            this.setState({
-                token: null,
-                user: null
-            });
+            setToken(null);
+            setUser(null);
             
             throw err;
         }
     };
 
-    logout = () => {
+    const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('userRole');
         delete axios.defaults.headers.common['Authorization'];
-        this.setState({
-            token: null,
-            user: null
-        });
+        setToken(null);
+        setUser(null);
         console.log('🔓 User logged out');
     };
 
-    render() {
-        const value = {
-            user: this.state.user,
-            token: this.state.token,
-            loading: this.state.loading,
-            login: this.login,
-            logout: this.logout,
-            isAuthenticated: !!this.state.token && !!this.state.user
-        };
+    const value = {
+        user,
+        token,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!token && !!user
+    };
 
-        return React.createElement(
-            AuthContext.Provider,
-            { value: value },
-            this.props.children
-        );
-    }
-}
+    // Use React.createElement to avoid JSX parsing issues
+    return React.createElement(
+        AuthContext.Provider,
+        { value: value },
+        children
+    );
+};
 
-// Custom hook for using auth
-export function useAuth() {
+export const useAuth = () => {
     const context = React.useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-}
+};
 
-// Default export
 export default AuthContext;
 
 
