@@ -1,17 +1,22 @@
 // context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React from 'react';
 import axios from 'axios';
 
-// ✅ Create the context
-const AuthContext = createContext();
+// Create the context
+const AuthContext = React.createContext();
 
-// ✅ Export the provider component
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
+// Provider component
+export class AuthProvider extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            user: null,
+            token: null,
+            loading: true
+        };
+    }
 
-    useEffect(() => {
+    componentDidMount() {
         // Check localStorage on mount
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
@@ -19,20 +24,25 @@ export const AuthProvider = ({ children }) => {
         if (storedToken && storedUser) {
             try {
                 const userData = JSON.parse(storedUser);
-                setToken(storedToken);
-                setUser(userData);
+                this.setState({
+                    token: storedToken,
+                    user: userData,
+                    loading: false
+                });
                 axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
                 console.log('✅ Restored user session:', userData);
             } catch (e) {
                 console.error('Error parsing stored user:', e);
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                this.setState({ loading: false });
             }
+        } else {
+            this.setState({ loading: false });
         }
-        setLoading(false);
-    }, []);
+    }
 
-    const login = async (username, password) => {
+    login = async (username, password) => {
         try {
             console.log('🔐 AuthContext: Logging in user:', username);
             
@@ -54,6 +64,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error('Invalid user data received from server');
             }
             
+            // Store in localStorage
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             
@@ -63,8 +74,10 @@ export const AuthProvider = ({ children }) => {
             
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
-            setToken(token);
-            setUser(user);
+            this.setState({
+                token: token,
+                user: user
+            });
             
             console.log('✅ AuthContext: User stored successfully:', {
                 id: user.id,
@@ -79,51 +92,55 @@ export const AuthProvider = ({ children }) => {
             
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            setToken(null);
-            setUser(null);
+            this.setState({
+                token: null,
+                user: null
+            });
             
             throw err;
         }
     };
 
-    const logout = () => {
+    logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('userRole');
         delete axios.defaults.headers.common['Authorization'];
-        setToken(null);
-        setUser(null);
+        this.setState({
+            token: null,
+            user: null
+        });
         console.log('🔓 User logged out');
     };
 
-    // ✅ Create the value object
-    const value = {
-        user,
-        token,
-        loading,
-        login,
-        logout,
-        isAuthenticated: !!token && !!user
-    };
+    render() {
+        const value = {
+            user: this.state.user,
+            token: this.state.token,
+            loading: this.state.loading,
+            login: this.login,
+            logout: this.logout,
+            isAuthenticated: !!this.state.token && !!this.state.user
+        };
 
-    // ✅ Return the provider with children
-    return React.createElement(
-        AuthContext.Provider,
-        { value: value },
-        children
-    );
-};
+        return React.createElement(
+            AuthContext.Provider,
+            { value: value },
+            this.props.children
+        );
+    }
+}
 
-// ✅ Custom hook for using auth
-export const useAuth = () => {
-    const context = useContext(AuthContext);
+// Custom hook for using auth
+export function useAuth() {
+    const context = React.useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-};
+}
 
-// ✅ Default export
+// Default export
 export default AuthContext;
 
 
