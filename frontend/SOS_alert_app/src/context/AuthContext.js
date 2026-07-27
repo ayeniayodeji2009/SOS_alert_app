@@ -30,59 +30,145 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = async (username, password) => {
-        try {
-            console.log('🔐 AuthContext: Logging in user:', username);
-            
-            const response = await axios.post(
-                'https://sos-alert-app-backend.onrender.com/users/login',
-                { username, password }
-            );
-            
-            console.log('✅ AuthContext: Login response:', response.data);
-            
-            const { token, user } = response.data;
-            
-            if (!token) {
-                throw new Error('No token received from server');
+
+
+
+
+
+    // context/AuthContext.js - Fixed login function
+
+const login = async (username, password) => {
+    try {
+        console.log('🔐 AuthContext: Logging in user:', username);
+        
+        // ✅ Create form data (OAuth2 format)
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        // ✅ Send as form data, NOT JSON
+        const response = await axios.post(
+            'https://sos-alert-app-backend.onrender.com/users/login',
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
             }
-            
-            if (!user || !user.id) {
-                console.error('Invalid user data:', user);
-                throw new Error('Invalid user data received from server');
-            }
-            
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(user));
-            
-            if (user.role) {
-                localStorage.setItem('userRole', user.role);
-            }
-            
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
-            setToken(token);
-            setUser(user);
-            
-            console.log('✅ AuthContext: User stored successfully:', {
-                id: user.id,
-                username: user.username,
-                role: user.role || 'user'
-            });
-            
-            return { token, user };
-            
-        } catch (err) {
-            console.error('❌ AuthContext: Login error:', err);
-            
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setToken(null);
-            setUser(null);
-            
-            throw err;
+        );
+        
+        console.log('✅ Login response:', response.data);
+        
+        // ✅ Your backend returns: {"access_token": token, "token_type": "bearer"}
+        // Note: The response doesn't include user data directly
+        const { access_token } = response.data;
+        
+        if (!access_token) {
+            throw new Error('No token received from server');
         }
-    };
+        
+        // ✅ Store token
+        localStorage.setItem('token', access_token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+        
+        // ✅ Fetch user data after successful login
+        const userResponse = await axios.get(
+            'https://sos-alert-app-backend.onrender.com/users/me',
+            {
+                headers: {
+                    'Authorization': `Bearer ${access_token}`
+                }
+            }
+        );
+        
+        const user = userResponse.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        if (user.role) {
+            localStorage.setItem('userRole', user.role);
+        }
+        
+        setToken(access_token);
+        setUser(user);
+        
+        console.log('✅ Login successful:', { id: user.id, username: user.username });
+        
+        return { token: access_token, user };
+        
+    } catch (err) {
+        console.error('❌ Login error:', err);
+        
+        // ✅ Detailed error logging
+        if (err.response) {
+            console.error('Response status:', err.response.status);
+            console.error('Response data:', err.response.data);
+            
+            // ✅ Handle 400 specifically for incorrect credentials
+            if (err.response.status === 400) {
+                throw new Error('Incorrect username or password');
+            }
+            
+            const errorMsg = err.response.data?.detail || err.response.data?.message || 'Login failed';
+            throw new Error(errorMsg);
+        } else {
+            throw new Error('Network error. Please check your connection.');
+        }
+    }
+};
+
+    // const login = async (username, password) => {
+    //     try {
+    //         console.log('🔐 AuthContext: Logging in user:', username);
+            
+    //         const response = await axios.post(
+    //             'https://sos-alert-app-backend.onrender.com/users/login',
+    //             { username, password }
+    //         );
+            
+    //         console.log('✅ AuthContext: Login response:', response.data);
+            
+    //         const { token, user } = response.data;
+            
+    //         if (!token) {
+    //             throw new Error('No token received from server');
+    //         }
+            
+    //         if (!user || !user.id) {
+    //             console.error('Invalid user data:', user);
+    //             throw new Error('Invalid user data received from server');
+    //         }
+            
+    //         localStorage.setItem('token', token);
+    //         localStorage.setItem('user', JSON.stringify(user));
+            
+    //         if (user.role) {
+    //             localStorage.setItem('userRole', user.role);
+    //         }
+            
+    //         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+    //         setToken(token);
+    //         setUser(user);
+            
+    //         console.log('✅ AuthContext: User stored successfully:', {
+    //             id: user.id,
+    //             username: user.username,
+    //             role: user.role || 'user'
+    //         });
+            
+    //         return { token, user };
+            
+    //     } catch (err) {
+    //         console.error('❌ AuthContext: Login error:', err);
+            
+    //         localStorage.removeItem('token');
+    //         localStorage.removeItem('user');
+    //         setToken(null);
+    //         setUser(null);
+            
+    //         throw err;
+    //     }
+    // };
 
     const logout = () => {
         localStorage.removeItem('token');
