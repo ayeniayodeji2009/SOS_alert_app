@@ -14,25 +14,25 @@ const UserDashboard = () => {
     const [loadingActions, setLoadingActions] = useState({});
 
     // ✅ Load user data on mount
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+    // useEffect(() => {
+    //     const token = localStorage.getItem('token');
+    //     const storedUser = localStorage.getItem('user');
         
-        if (!token || !storedUser) {
-            // Redirect to login if not authenticated
-            window.location.href = '/login';
-            return;
-        }
+    //     if (!token || !storedUser) {
+    //         // Redirect to login if not authenticated
+    //         window.location.href = '/login';
+    //         return;
+    //     }
         
-        try {
-            const userData = JSON.parse(storedUser);
-            setUser(userData);
-            setUserId(userData.id);
-        } catch (e) {
-            console.error('Error parsing user data:', e);
-            window.location.href = '/login';
-        }
-    }, []);
+    //     try {
+    //         const userData = JSON.parse(storedUser);
+    //         setUser(userData);
+    //         setUserId(userData.id);
+    //     } catch (e) {
+    //         console.error('Error parsing user data:', e);
+    //         window.location.href = '/login';
+    //     }
+    // }, []);
 
     // ✅ Fetch nearest police station
     const fetchNearestStation = useCallback(async (lat, lon) => {
