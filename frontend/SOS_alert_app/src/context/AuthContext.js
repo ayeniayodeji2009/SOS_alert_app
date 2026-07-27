@@ -1,8 +1,9 @@
-// context/AuthContext.jsx - Functional version with no JSX issues
-import React, { useState, useEffect } from 'react';
+// context/AuthContext.js
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import axios from 'axios';
 
-const AuthContext = React.createContext();
+// ✅ Create and export the context
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -102,7 +103,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!token && !!user
     };
 
-    // Use React.createElement to avoid JSX parsing issues
+    // ✅ Use React.createElement to avoid build issues
     return React.createElement(
         AuthContext.Provider,
         { value: value },
@@ -110,16 +111,17 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// ✅ Export the useAuth hook
 export const useAuth = () => {
-    const context = React.useContext(AuthContext);
+    const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
 };
 
+// ✅ Default export (optional)
 export default AuthContext;
-
 
 
 
