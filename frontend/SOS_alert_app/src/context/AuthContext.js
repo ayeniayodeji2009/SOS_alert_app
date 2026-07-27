@@ -2,15 +2,17 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 
+// ✅ Create the context
 const AuthContext = createContext();
 
+// ✅ Export the provider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // ✅ Check localStorage on mount
+        // Check localStorage on mount
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
         
@@ -20,6 +22,7 @@ export const AuthProvider = ({ children }) => {
                 setToken(storedToken);
                 setUser(userData);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+                console.log('✅ Restored user session:', userData);
             } catch (e) {
                 console.error('Error parsing stored user:', e);
                 localStorage.removeItem('token');
@@ -31,41 +34,69 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
+            console.log('🔐 AuthContext: Logging in user:', username);
+            
             const response = await axios.post(
                 'https://sos-alert-app-backend.onrender.com/users/login',
                 { username, password }
             );
             
+            console.log('✅ AuthContext: Login response:', response.data);
+            
             const { token, user } = response.data;
             
-            // ✅ Store in localStorage
+            if (!token) {
+                throw new Error('No token received from server');
+            }
+            
+            if (!user || !user.id) {
+                console.error('Invalid user data:', user);
+                throw new Error('Invalid user data received from server');
+            }
+            
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             
-            // ✅ Set axios headers
+            if (user.role) {
+                localStorage.setItem('userRole', user.role);
+            }
+            
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
-            // ✅ Update state
             setToken(token);
             setUser(user);
             
+            console.log('✅ AuthContext: User stored successfully:', {
+                id: user.id,
+                username: user.username,
+                role: user.role || 'user'
+            });
+            
             return { token, user };
+            
         } catch (err) {
-            console.error('Login error:', err);
+            console.error('❌ AuthContext: Login error:', err);
+            
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+            
             throw err;
         }
     };
 
     const logout = () => {
-        // ✅ Clear all
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('userRole');
         delete axios.defaults.headers.common['Authorization'];
         setToken(null);
         setUser(null);
+        console.log('🔓 User logged out');
     };
 
+    // ✅ Create the value object
     const value = {
         user,
         token,
@@ -75,13 +106,15 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!token && !!user
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
+    // ✅ Return the provider with children
+    return React.createElement(
+        AuthContext.Provider,
+        { value: value },
+        children
     );
 };
 
+// ✅ Custom hook for using auth
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -90,6 +123,7 @@ export const useAuth = () => {
     return context;
 };
 
+// ✅ Default export
 export default AuthContext;
 
 
