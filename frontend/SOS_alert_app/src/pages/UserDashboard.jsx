@@ -1,23 +1,64 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Shield, CheckCircle } from 'lucide-react';
+import { Shield, CheckCircle, MapPin, Phone, Navigation } from 'lucide-react';
 import '../App.css';
 
-const UserDashboard = ({ userId = 1, user = "maja" }) => {
+const UserDashboard = () => {
+    // ✅ Get user from localStorage
+    const [user, setUser] = useState(null);
+    const [userId, setUserId] = useState(null);
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [wsConnected, setWsConnected] = useState(false);
+    const [nearestStation, setNearestStation] = useState(null);
+    const [loadingActions, setLoadingActions] = useState({});
 
+    // ✅ Load user data on mount
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (!token || !storedUser) {
+            // Redirect to login if not authenticated
+            window.location.href = '/login';
+            return;
+        }
+        
+        try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setUserId(userData.id);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+            window.location.href = '/login';
+        }
+    }, []);
+
+    // ✅ Fetch nearest police station
+    const fetchNearestStation = useCallback(async (lat, lon) => {
+        try {
+            const response = await axios.get(
+                `https://sos-alert-app-backend.onrender.com/police-posts/nearby?lat=${lat}&lon=${lon}&radius=10000`
+            );
+            if (response.data && response.data.length > 0) {
+                setNearestStation(response.data[0]);
+            }
+        } catch (err) {
+            console.error('Error fetching nearest station:', err);
+        }
+    }, []);
+
+    // ✅ Fetch user's alerts
     const fetchMyAlerts = useCallback(async () => {
         if (!userId) return;
         
         try {
             console.log("Fetching alerts for user ID:", userId);
-            const res = await axios.get(`https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`);
-            // const res = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
+            const res = await axios.get(
+                `https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`
+            );
             console.log("Fetched alerts:", res.data);
             
-            // Filter out deleted alerts if needed
             const activeAlerts = res.data.filter(a => !a.is_deleted_by_user);
             setAlerts(activeAlerts);
         } catch (err) {
@@ -31,23 +72,35 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
         }
     }, [userId]);
 
+    // ✅ Trigger SOS
     const triggerSOS = async () => {
         if (!userId) return;
         
         navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            
+            // Find nearest station
+            await fetchNearestStation(latitude, longitude);
+            
             const payload = { 
                 user_id: userId,
                 username: user?.username || "Unknown User", 
-                lat: pos.coords.latitude, 
-                lon: pos.coords.longitude 
+                lat: latitude, 
+                lon: longitude 
             };
+            
             try {
-                // const res = await axios.post('http://localhost:8000/alerts/trigger', payload);
-                const res = await axios.post('https://sos-alert-app-backend.onrender.com/alerts/trigger', payload);
-                alert(`SOS SENT! Nearest Station: ${res.data.nearest_station}`);
-                await fetchMyAlerts(); 
+                const res = await axios.post(
+                    'https://sos-alert-app-backend.onrender.com/alerts/trigger',
+                    payload
+                );
+                
+                const stationName = res.data.nearest_station || nearestStation?.name || 'Unknown';
+                alert(`🚨 SOS SENT! Nearest Station: ${stationName}`);
+                await fetchMyAlerts();
             } catch (err) {
-                alert("Error sending SOS: " + err.message);
+                alert("Error sending SOS: " + (err.response?.data?.detail || err.message));
+                console.error("SOS Error:", err);
             }
         }, (err) => {
             alert("Please enable location services to send SOS");
@@ -55,7 +108,50 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
         });
     };
 
-    // WebSocket connection effect
+    // ✅ Confirm Arrival
+    const confirmArrival = async (alertId) => {
+        setLoadingActions(prev => ({ ...prev, [alertId]: true }));
+        
+        try {
+            console.log("Confirming arrival for alert:", alertId);
+            
+            const response = await axios.patch(
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
+                {},
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            
+            console.log("Arrival confirmed:", response.data);
+            
+            // ✅ Update state immediately (optimistic)
+            setAlerts(prev => 
+                prev.map(a => 
+                    a.id === alertId 
+                        ? { ...a, user_confirmed_arrival: true }
+                        : a
+                )
+            );
+            
+            // ✅ Also refresh from server
+            await fetchMyAlerts();
+            
+            alert("✅ Arrival confirmed! Rescuer will be notified.");
+            
+        } catch (err) {
+            console.error("Error confirming arrival:", err);
+            if (err.response?.status === 404) {
+                alert("Alert not found");
+            } else if (err.response?.status === 422) {
+                alert("Validation error. Please check if the alert exists.");
+            } else {
+                alert(`Error: ${err.response?.data?.detail || "Something went wrong"}`);
+            }
+        } finally {
+            setLoadingActions(prev => ({ ...prev, [alertId]: false }));
+        }
+    };
+
+    // ✅ WebSocket Connection
     useEffect(() => {
         let ws = null;
         let reconnectTimer = null;
@@ -65,18 +161,26 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
             if (!isMounted) return;
             
             try {
-                // Close existing connection if any
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.close();
                 }
                 
-                // ws = new WebSocket('ws://localhost:8000/ws/alerts');
                 ws = new WebSocket('wss://sos-alert-app-backend.onrender.com/ws/alerts');
 
                 ws.onopen = () => {
                     if (isMounted) {
-                        console.log("UserDashboard WebSocket Connected ✅");
+                        console.log("🔌 UserDashboard WebSocket Connected");
                         setWsConnected(true);
+                        
+                        // ✅ Authenticate
+                        const token = localStorage.getItem('token');
+                        if (token && userId) {
+                            ws.send(JSON.stringify({
+                                type: 'auth',
+                                token: token,
+                                user_id: userId
+                            }));
+                        }
                     }
                     if (reconnectTimer) clearTimeout(reconnectTimer);
                 };
@@ -84,16 +188,67 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        console.log("UserDashboard WebSocket message received:", data);
+                        console.log("📨 UserDashboard WebSocket:", data);
                         
-                        // Refresh alerts for these events
-                        const relevantEvents = ["ALERT_CLAIMED", "USER_CONFIRMED_ARRIVAL", "INCIDENT_RESOLVED", "NEW_SOS"];
-                        if (relevantEvents.includes(data.event)) {
-                            console.log("Refreshing alerts due to event:", data.event);
-                            fetchMyAlerts();
+                        // ✅ Handle different event types
+                        switch(data.type || data.event) {
+                            case 'new_alert':
+                            case 'NEW_SOS':
+                                // ✅ Only refresh if it's the current user's alert
+                                if (data.alert?.user_id === userId || data.payload?.user_id === userId) {
+                                    fetchMyAlerts();
+                                    // Show notification
+                                    new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3')
+                                        .play()
+                                        .catch(() => console.log("Audio play blocked"));
+                                }
+                                break;
+                                
+                            case 'alert_assigned':
+                            case 'ALERT_CLAIMED':
+                                // ✅ Update the alert status
+                                const alertId = data.alert_id || data.payload?.id;
+                                setAlerts(prev => 
+                                    prev.map(a => 
+                                        a.id === alertId
+                                            ? { ...a, status: 'HELP_ON_THE_WAY', assigned_to: data.responder_type || data.payload?.assigned_to }
+                                            : a
+                                    )
+                                );
+                                break;
+                                
+                            case 'alert_resolved':
+                            case 'INCIDENT_RESOLVED':
+                                const resolvedId = data.alert_id || data.payload?.id;
+                                setAlerts(prev => 
+                                    prev.map(a => 
+                                        a.id === resolvedId
+                                            ? { ...a, status: 'RESOLVED', resolved_by: data.responder_type || data.payload?.resolved_by }
+                                            : a
+                                    )
+                                );
+                                break;
+                                
+                            case 'user_confirmed':
+                            case 'USER_CONFIRMED_ARRIVAL':
+                                const confirmedId = data.alert_id || data.payload?.id;
+                                setAlerts(prev => 
+                                    prev.map(a => 
+                                        a.id === confirmedId
+                                            ? { ...a, user_confirmed_arrival: true }
+                                            : a
+                                    )
+                                );
+                                break;
+                                
+                            default:
+                                // If it's a full alert object for this user
+                                if (data.id && data.user_id === userId) {
+                                    fetchMyAlerts();
+                                }
                         }
                     } catch (err) {
-                        console.error("WebSocket message parse error:", err);
+                        console.error("WebSocket parse error:", err);
                     }
                 };
                 
@@ -104,9 +259,8 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                 
                 ws.onclose = (event) => {
                     if (isMounted) {
-                        console.log("WebSocket Disconnected, code:", event.code, "reason:", event.reason);
+                        console.log(`⚠️ WebSocket Disconnected (${event.code})`);
                         setWsConnected(false);
-                        // Only reconnect if it wasn't a normal closure
                         if (event.code !== 1000) {
                             reconnectTimer = setTimeout(connectWebSocket, 5000);
                         }
@@ -114,70 +268,25 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                 };
             } catch (err) {
                 console.error("WebSocket connection error:", err);
+                reconnectTimer = setTimeout(connectWebSocket, 5000);
             }
         };
         
-        // Start WebSocket connection
-        connectWebSocket();
+        if (userId) {
+            connectWebSocket();
+            fetchMyAlerts();
+        }
         
-        // Cleanup function
         return () => {
             isMounted = false;
             if (reconnectTimer) clearTimeout(reconnectTimer);
             if (ws && ws.readyState === WebSocket.OPEN) {
-                console.log("Closing UserDashboard WebSocket 🛑");
                 ws.close(1000, "Component unmounting");
             }
         };
-    }, [fetchMyAlerts]); // Only re-run if fetchMyAlerts changes
+    }, [userId, fetchMyAlerts]);
 
-    // Separate effect for initial data loading
-    useEffect(() => {
-        // Load initial data
-        fetchMyAlerts();
-    }, [fetchMyAlerts]); // This effect only runs once when component mounts
-
-    const confirmArrival = async (alertId) => {
-        try {
-            console.log("Confirming arrival for alert:", alertId);
-            
-            const response = await axios.patch(
-                // `http://localhost:8000/alerts/${alertId}/confirm-arrival`,
-                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
-                {}, // Empty body - no data needed
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            
-            console.log("Arrival confirmed:", response.data);
-            
-            // Refresh alerts immediately
-            await fetchMyAlerts();
-            
-            // Show success message
-            alert("Arrival confirmed! Rescuer will be notified.");
-            
-        } catch (err) {
-            console.error("Error confirming arrival:", err);
-            
-            if (err.response) {
-                console.error("Backend Error:", err.response.data);
-                if (err.response.status === 404) {
-                    alert("Alert not found");
-                } else if (err.response.status === 422) {
-                    alert("Validation error. Please check if the alert exists.");
-                } else {
-                    alert(`Error: ${err.response.data.detail || "Something went wrong"}`);
-                }
-            } else {
-                alert("Network error. Please check if the backend server is running.");
-            }
-        }
-    };
-
+    // ✅ Loading state
     if (loading) {
         return (
             <div className="h-screen bg-slate-900 text-white flex items-center justify-center">
@@ -190,22 +299,29 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
         );
     }
 
+    // ✅ Render
     return (
         <div className="max-w-6xl mx-auto p-6 bg-slate-900 min-h-screen text-white">
-            <header className="mb-8 flex justify-between items-center">
+            <header className="mb-8 flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h2 className="text-3xl font-bold flex items-center gap-3">
                         <Shield className="text-red-500" size={32} /> SOS Center
                     </h2>
                     <p className="text-sm text-slate-400 mt-1">
+                        Welcome, {user?.username || 'User'}! 
                         WebSocket: {wsConnected ? "🟢 Connected" : "🔴 Disconnected"}
                     </p>
+                    {nearestStation && (
+                        <p className="text-xs text-blue-400 mt-1">
+                            📍 Nearest Station: {nearestStation.name} ({nearestStation.area_command})
+                        </p>
+                    )}
                 </div>
                 <button 
                     onClick={triggerSOS} 
-                    className="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-full font-black animate-bounce shadow-2xl"
+                    className="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-full font-black animate-bounce shadow-2xl transition-all hover:scale-105"
                 >
-                    TRIGGER SOS
+                    🚨 TRIGGER SOS
                 </button>
             </header>
 
@@ -229,29 +345,36 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                             </tr>
                         ) : (
                             alerts.map((alert) => (
-                                <tr key={alert.id} className="border-b border-slate-700">
-                                    <td className="p-4 font-mono text-blue-400">#{alert.incident_number}</td>
-                                    <td className="p-4">{new Date(alert.created_at).toLocaleTimeString()}</td>
+                                <tr key={alert.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                                    <td className="p-4 font-mono text-blue-400">#{alert.id}</td>
+                                    <td className="p-4 text-sm">
+                                        {new Date(alert.created_at).toLocaleString()}
+                                    </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-[10px] font-bold ${
                                             alert.status === 'HELP_ON_THE_WAY' ? 'bg-blue-500' :
                                             alert.status === 'RESOLVED' ? 'bg-green-500' :
+                                            alert.status === 'ASSIGNED' ? 'bg-yellow-500' :
                                             'bg-red-500'
                                         }`}>
                                             {alert.status}
                                         </span>
                                     </td>
                                     <td className="p-4 text-sm">
-                                        {alert.claimed_by_type || 'Searching...'}
+                                        {alert.claimed_by_type || alert.assigned_to || 'Searching...'}
                                         {alert.responder_name && ` (${alert.responder_name})`}
                                     </td>
                                     <td className="p-4 text-center">
+                                        {/* ✅ Disable button if already confirmed or loading */}
                                         {alert.status === 'HELP_ON_THE_WAY' && !alert.user_confirmed_arrival ? (
                                             <button 
                                                 onClick={() => confirmArrival(alert.id)} 
-                                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                                disabled={loadingActions[alert.id]}
+                                                className={`bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors ${
+                                                    loadingActions[alert.id] ? 'opacity-50 cursor-not-allowed' : ''
+                                                }`}
                                             >
-                                                Arrived?
+                                                {loadingActions[alert.id] ? '⏳...' : '✅ Arrived?'}
                                             </button>
                                         ) : alert.user_confirmed_arrival ? (
                                             <span className="text-green-500 flex items-center gap-1 justify-center">
@@ -259,6 +382,8 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
                                             </span>
                                         ) : alert.status === 'PENDING' ? (
                                             <span className="text-yellow-500">Waiting for responder...</span>
+                                        ) : alert.status === 'RESOLVED' ? (
+                                            <span className="text-green-500">✅ Resolved</span>
                                         ) : "—"}
                                     </td>
                                 </tr>
@@ -272,6 +397,421 @@ const UserDashboard = ({ userId = 1, user = "maja" }) => {
 };
 
 export default UserDashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useEffect, useState, useCallback } from 'react';
+// import axios from 'axios';
+// import { Shield, CheckCircle } from 'lucide-react';
+// import '../App.css';
+
+// const UserDashboard = ({ userId = 1, user = "maja" }) => {
+//     const [alerts, setAlerts] = useState([]);
+//     const [loading, setLoading] = useState(true);
+//     const [wsConnected, setWsConnected] = useState(false);
+
+//     const fetchMyAlerts = useCallback(async () => {
+//         if (!userId) return;
+        
+//         try {
+//             console.log("Fetching alerts for user ID:", userId);
+//             const res = await axios.get(`https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`);
+//             // const res = await axios.get(`http://localhost:8000/alerts/history/${userId}`);
+//             console.log("Fetched alerts:", res.data);
+            
+//             // Filter out deleted alerts if needed
+//             const activeAlerts = res.data.filter(a => !a.is_deleted_by_user);
+//             setAlerts(activeAlerts);
+//         } catch (err) {
+//             console.error("Error fetching alerts:", err);
+//             if (err.response?.status === 404) {
+//                 console.log("No alerts found for this user");
+//                 setAlerts([]);
+//             }
+//         } finally {
+//             setLoading(false);
+//         }
+//     }, [userId]);
+
+//     const triggerSOS = async () => {
+//         if (!userId) return;
+        
+//         navigator.geolocation.getCurrentPosition(async (pos) => {
+//             const payload = { 
+//                 user_id: userId,
+//                 username: user?.username || "Unknown User", 
+//                 lat: pos.coords.latitude, 
+//                 lon: pos.coords.longitude 
+//             };
+//             try {
+//                 // const res = await axios.post('http://localhost:8000/alerts/trigger', payload);
+//                 const res = await axios.post('https://sos-alert-app-backend.onrender.com/alerts/trigger', payload);
+//                 alert(`SOS SENT! Nearest Station: ${res.data.nearest_station}`);
+//                 await fetchMyAlerts(); 
+//             } catch (err) {
+//                 alert("Error sending SOS: " + err.message);
+//             }
+//         }, (err) => {
+//             alert("Please enable location services to send SOS");
+//             console.error("Geolocation error:", err);
+//         });
+//     };
+
+//     // WebSocket connection effect
+//     useEffect(() => {
+//         let ws = null;
+//         let reconnectTimer = null;
+//         let isMounted = true;
+        
+//         const connectWebSocket = () => {
+//             if (!isMounted) return;
+            
+//             try {
+//                 // Close existing connection if any
+//                 if (ws && ws.readyState === WebSocket.OPEN) {
+//                     ws.close();
+//                 }
+                
+//                 // ws = new WebSocket('ws://localhost:8000/ws/alerts');
+//                 ws = new WebSocket('wss://sos-alert-app-backend.onrender.com/ws/alerts');
+
+//                 ws.onopen = () => {
+//                     if (isMounted) {
+//                         console.log("UserDashboard WebSocket Connected ✅");
+//                         setWsConnected(true);
+//                     }
+//                     if (reconnectTimer) clearTimeout(reconnectTimer);
+//                 };
+                
+//                 ws.onmessage = (event) => {
+//                     try {
+//                         const data = JSON.parse(event.data);
+//                         console.log("UserDashboard WebSocket message received:", data);
+                        
+//                         // Refresh alerts for these events
+//                         const relevantEvents = ["ALERT_CLAIMED", "USER_CONFIRMED_ARRIVAL", "INCIDENT_RESOLVED", "NEW_SOS"];
+//                         if (relevantEvents.includes(data.event)) {
+//                             console.log("Refreshing alerts due to event:", data.event);
+//                             fetchMyAlerts();
+//                         }
+//                     } catch (err) {
+//                         console.error("WebSocket message parse error:", err);
+//                     }
+//                 };
+                
+//                 ws.onerror = (err) => {
+//                     console.error("WebSocket Error:", err);
+//                     setWsConnected(false);
+//                 };
+                
+//                 ws.onclose = (event) => {
+//                     if (isMounted) {
+//                         console.log("WebSocket Disconnected, code:", event.code, "reason:", event.reason);
+//                         setWsConnected(false);
+//                         // Only reconnect if it wasn't a normal closure
+//                         if (event.code !== 1000) {
+//                             reconnectTimer = setTimeout(connectWebSocket, 5000);
+//                         }
+//                     }
+//                 };
+//             } catch (err) {
+//                 console.error("WebSocket connection error:", err);
+//             }
+//         };
+        
+//         // Start WebSocket connection
+//         connectWebSocket();
+        
+//         // Cleanup function
+//         return () => {
+//             isMounted = false;
+//             if (reconnectTimer) clearTimeout(reconnectTimer);
+//             if (ws && ws.readyState === WebSocket.OPEN) {
+//                 console.log("Closing UserDashboard WebSocket 🛑");
+//                 ws.close(1000, "Component unmounting");
+//             }
+//         };
+//     }, [fetchMyAlerts]); // Only re-run if fetchMyAlerts changes
+
+//     // Separate effect for initial data loading
+//     useEffect(() => {
+//         // Load initial data
+//         fetchMyAlerts();
+//     }, [fetchMyAlerts]); // This effect only runs once when component mounts
+
+//     const confirmArrival = async (alertId) => {
+//         try {
+//             console.log("Confirming arrival for alert:", alertId);
+            
+//             const response = await axios.patch(
+//                 // `http://localhost:8000/alerts/${alertId}/confirm-arrival`,
+//                 `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
+//                 {}, // Empty body - no data needed
+//                 {
+//                     headers: {
+//                         'Content-Type': 'application/json'
+//                     }
+//                 }
+//             );
+            
+//             console.log("Arrival confirmed:", response.data);
+            
+//             // Refresh alerts immediately
+//             await fetchMyAlerts();
+            
+//             // Show success message
+//             alert("Arrival confirmed! Rescuer will be notified.");
+            
+//         } catch (err) {
+//             console.error("Error confirming arrival:", err);
+            
+//             if (err.response) {
+//                 console.error("Backend Error:", err.response.data);
+//                 if (err.response.status === 404) {
+//                     alert("Alert not found");
+//                 } else if (err.response.status === 422) {
+//                     alert("Validation error. Please check if the alert exists.");
+//                 } else {
+//                     alert(`Error: ${err.response.data.detail || "Something went wrong"}`);
+//                 }
+//             } else {
+//                 alert("Network error. Please check if the backend server is running.");
+//             }
+//         }
+//     };
+
+//     if (loading) {
+//         return (
+//             <div className="h-screen bg-slate-900 text-white flex items-center justify-center">
+//                 <div className="text-center">
+//                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+//                     <p>Loading your dashboard...</p>
+//                     <p className="text-sm text-slate-400 mt-2">WebSocket: {wsConnected ? "✅ Connected" : "⏳ Connecting..."}</p>
+//                 </div>
+//             </div>
+//         );
+//     }
+
+//     return (
+//         <div className="max-w-6xl mx-auto p-6 bg-slate-900 min-h-screen text-white">
+//             <header className="mb-8 flex justify-between items-center">
+//                 <div>
+//                     <h2 className="text-3xl font-bold flex items-center gap-3">
+//                         <Shield className="text-red-500" size={32} /> SOS Center
+//                     </h2>
+//                     <p className="text-sm text-slate-400 mt-1">
+//                         WebSocket: {wsConnected ? "🟢 Connected" : "🔴 Disconnected"}
+//                     </p>
+//                 </div>
+//                 <button 
+//                     onClick={triggerSOS} 
+//                     className="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-full font-black animate-bounce shadow-2xl"
+//                 >
+//                     TRIGGER SOS
+//                 </button>
+//             </header>
+
+//             <div className="overflow-x-auto bg-slate-800 rounded-xl border border-slate-700">
+//                 <table className="w-full text-left">
+//                     <thead>
+//                         <tr className="bg-slate-700 text-slate-300 text-xs uppercase">
+//                             <th className="p-4">Incident</th>
+//                             <th className="p-4">Time</th>
+//                             <th className="p-4">Status</th>
+//                             <th className="p-4">Rescuer</th>
+//                             <th className="p-4 text-center">Action</th>
+//                         </tr>
+//                     </thead>
+//                     <tbody>
+//                         {alerts.length === 0 ? (
+//                             <tr>
+//                                 <td colSpan="5" className="p-10 text-center text-slate-500">
+//                                     No records found. Click the SOS button to send an alert.
+//                                 </td>
+//                             </tr>
+//                         ) : (
+//                             alerts.map((alert) => (
+//                                 <tr key={alert.id} className="border-b border-slate-700">
+//                                     <td className="p-4 font-mono text-blue-400">#{alert.incident_number}</td>
+//                                     <td className="p-4">{new Date(alert.created_at).toLocaleTimeString()}</td>
+//                                     <td className="p-4">
+//                                         <span className={`px-2 py-1 rounded text-[10px] font-bold ${
+//                                             alert.status === 'HELP_ON_THE_WAY' ? 'bg-blue-500' :
+//                                             alert.status === 'RESOLVED' ? 'bg-green-500' :
+//                                             'bg-red-500'
+//                                         }`}>
+//                                             {alert.status}
+//                                         </span>
+//                                     </td>
+//                                     <td className="p-4 text-sm">
+//                                         {alert.claimed_by_type || 'Searching...'}
+//                                         {alert.responder_name && ` (${alert.responder_name})`}
+//                                     </td>
+//                                     <td className="p-4 text-center">
+//                                         {alert.status === 'HELP_ON_THE_WAY' && !alert.user_confirmed_arrival ? (
+//                                             <button 
+//                                                 onClick={() => confirmArrival(alert.id)} 
+//                                                 className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors"
+//                                             >
+//                                                 Arrived?
+//                                             </button>
+//                                         ) : alert.user_confirmed_arrival ? (
+//                                             <span className="text-green-500 flex items-center gap-1 justify-center">
+//                                                 <CheckCircle size={16} /> Verified
+//                                             </span>
+//                                         ) : alert.status === 'PENDING' ? (
+//                                             <span className="text-yellow-500">Waiting for responder...</span>
+//                                         ) : "—"}
+//                                     </td>
+//                                 </tr>
+//                             ))
+//                         )}
+//                     </tbody>
+//                 </table>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default UserDashboard;
 
 
 
