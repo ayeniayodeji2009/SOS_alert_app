@@ -109,195 +109,265 @@ const UserDashboard = () => {
     };
 
     // ✅ Confirm Arrival
+    // const confirmArrival = async (alertId) => {
+    //     setLoadingActions(prev => ({ ...prev, [alertId]: true }));
+        
+    //     try {
+    //         console.log("Confirming arrival for alert:", alertId);
+            
+    //         const response = await axios.patch(
+    //             `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
+    //             {},
+    //             { headers: { 'Content-Type': 'application/json' } }
+    //         );
+            
+    //         console.log("Arrival confirmed:", response.data);
+            
+    //         // ✅ Update state immediately (optimistic)
+    //         setAlerts(prev => 
+    //             prev.map(a => 
+    //                 a.id === alertId 
+    //                     ? { ...a, user_confirmed_arrival: true }
+    //                     : a
+    //             )
+    //         );
+            
+    //         // ✅ Also refresh from server
+    //         await fetchMyAlerts();
+            
+    //         alert("✅ Arrival confirmed! Rescuer will be notified.");
+            
+    //     } catch (err) {
+    //         console.error("Error confirming arrival:", err);
+    //         if (err.response?.status === 404) {
+    //             alert("Alert not found");
+    //         } else if (err.response?.status === 422) {
+    //             alert("Validation error. Please check if the alert exists.");
+    //         } else {
+    //             alert(`Error: ${err.response?.data?.detail || "Something went wrong"}`);
+    //         }
+    //     } finally {
+    //         setLoadingActions(prev => ({ ...prev, [alertId]: false }));
+    //     }
+    // };
+
+    // // ✅ WebSocket Connection
+    // useEffect(() => {
+    //     let ws = null;
+    //     let reconnectTimer = null;
+    //     let isMounted = true;
+        
+    //     const connectWebSocket = () => {
+    //         if (!isMounted) return;
+            
+    //         try {
+    //             if (ws && ws.readyState === WebSocket.OPEN) {
+    //                 ws.close();
+    //             }
+                
+    //             ws = new WebSocket('wss://sos-alert-app-backend.onrender.com/ws/alerts');
+
+    //             ws.onopen = () => {
+    //                 if (isMounted) {
+    //                     console.log("🔌 UserDashboard WebSocket Connected");
+    //                     setWsConnected(true);
+                        
+    //                     // ✅ Authenticate
+    //                     const token = localStorage.getItem('token');
+    //                     if (token && userId) {
+    //                         ws.send(JSON.stringify({
+    //                             type: 'auth',
+    //                             token: token,
+    //                             user_id: userId
+    //                         }));
+    //                     }
+    //                 }
+    //                 if (reconnectTimer) clearTimeout(reconnectTimer);
+    //             };
+                
+    //             ws.onmessage = (event) => {
+    //                 try {
+    //                     const data = JSON.parse(event.data);
+    //                     console.log("📨 UserDashboard WebSocket:", data);
+                        
+    //                     // ✅ Handle different event types
+    //                     switch(data.type || data.event) {
+    //                         case 'new_alert':
+    //                         case 'NEW_SOS':
+    //                             // ✅ Only refresh if it's the current user's alert
+    //                             if (data.alert?.user_id === userId || data.payload?.user_id === userId) {
+    //                                 fetchMyAlerts();
+    //                                 // Show notification
+    //                                 new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3')
+    //                                     .play()
+    //                                     .catch(() => console.log("Audio play blocked"));
+    //                             }
+    //                             break;
+                                
+    //                         case 'alert_assigned':
+    //                         case 'ALERT_CLAIMED':
+    //                             // ✅ Update the alert status
+    //                             const alertId = data.alert_id || data.payload?.id;
+    //                             setAlerts(prev => 
+    //                                 prev.map(a => 
+    //                                     a.id === alertId
+    //                                         ? { ...a, status: 'HELP_ON_THE_WAY', assigned_to: data.responder_type || data.payload?.assigned_to }
+    //                                         : a
+    //                                 )
+    //                             );
+    //                             break;
+                                
+    //                         case 'alert_resolved':
+    //                         case 'INCIDENT_RESOLVED':
+    //                             const resolvedId = data.alert_id || data.payload?.id;
+    //                             setAlerts(prev => 
+    //                                 prev.map(a => 
+    //                                     a.id === resolvedId
+    //                                         ? { ...a, status: 'RESOLVED', resolved_by: data.responder_type || data.payload?.resolved_by }
+    //                                         : a
+    //                                 )
+    //                             );
+    //                             break;
+                                
+    //                         case 'user_confirmed':
+    //                         case 'USER_CONFIRMED_ARRIVAL':
+    //                             const confirmedId = data.alert_id || data.payload?.id;
+    //                             setAlerts(prev => 
+    //                                 prev.map(a => 
+    //                                     a.id === confirmedId
+    //                                         ? { ...a, user_confirmed_arrival: true }
+    //                                         : a
+    //                                 )
+    //                             );
+    //                             break;
+                                
+    //                         default:
+    //                             // If it's a full alert object for this user
+    //                             if (data.id && data.user_id === userId) {
+    //                                 fetchMyAlerts();
+    //                             }
+    //                     }
+    //                 } catch (err) {
+    //                     console.error("WebSocket parse error:", err);
+    //                 }
+    //             };
+                
+    //             ws.onerror = (err) => {
+    //                 console.error("WebSocket Error:", err);
+    //                 setWsConnected(false);
+    //             };
+                
+    //             ws.onclose = (event) => {
+    //                 if (isMounted) {
+    //                     console.log(`⚠️ WebSocket Disconnected (${event.code})`);
+    //                     setWsConnected(false);
+    //                     if (event.code !== 1000) {
+    //                         reconnectTimer = setTimeout(connectWebSocket, 5000);
+    //                     }
+    //                 }
+    //             };
+    //         } catch (err) {
+    //             console.error("WebSocket connection error:", err);
+    //             reconnectTimer = setTimeout(connectWebSocket, 5000);
+    //         }
+    //     };
+        
+    //     if (userId) {
+    //         connectWebSocket();
+    //         fetchMyAlerts();
+    //     }
+        
+    //     return () => {
+    //         isMounted = false;
+    //         if (reconnectTimer) clearTimeout(reconnectTimer);
+    //         if (ws && ws.readyState === WebSocket.OPEN) {
+    //             ws.close(1000, "Component unmounting");
+    //         }
+    //     };
+    // }, [userId, fetchMyAlerts]);
+
+    // // ✅ Loading state
+    // if (loading) {
+    //     return (
+    //         <div className="h-screen bg-slate-900 text-white flex items-center justify-center">
+    //             <div className="text-center">
+    //                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+    //                 <p>Loading your dashboard...</p>
+    //                 <p className="text-sm text-slate-400 mt-2">WebSocket: {wsConnected ? "✅ Connected" : "⏳ Connecting..."}</p>
+    //             </div>
+    //         </div>
+    //     );
+    // }
+
+
+
+
+    // ✅ Confirm Arrival - changes button to "Delete" but disabled
     const confirmArrival = async (alertId) => {
         setLoadingActions(prev => ({ ...prev, [alertId]: true }));
         
         try {
             console.log("Confirming arrival for alert:", alertId);
+            const token = localStorage.getItem('token');
             
             const response = await axios.patch(
                 `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/confirm-arrival`,
                 {},
-                { headers: { 'Content-Type': 'application/json' } }
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
             
             console.log("Arrival confirmed:", response.data);
             
-            // ✅ Update state immediately (optimistic)
+            // ✅ Update state - button will show "Delete" but disabled
             setAlerts(prev => 
                 prev.map(a => 
                     a.id === alertId 
-                        ? { ...a, user_confirmed_arrival: true }
+                        ? { ...a, user_confirmed_arrival: true, status: 'ARRIVED' }
                         : a
                 )
             );
             
-            // ✅ Also refresh from server
             await fetchMyAlerts();
-            
-            alert("✅ Arrival confirmed! Rescuer will be notified.");
             
         } catch (err) {
             console.error("Error confirming arrival:", err);
-            if (err.response?.status === 404) {
-                alert("Alert not found");
-            } else if (err.response?.status === 422) {
-                alert("Validation error. Please check if the alert exists.");
-            } else {
-                alert(`Error: ${err.response?.data?.detail || "Something went wrong"}`);
-            }
+            alert(`Error: ${err.response?.data?.detail || "Something went wrong"}`);
         } finally {
             setLoadingActions(prev => ({ ...prev, [alertId]: false }));
         }
     };
 
-    // ✅ WebSocket Connection
-    useEffect(() => {
-        let ws = null;
-        let reconnectTimer = null;
-        let isMounted = true;
+    // ✅ Delete Alert - only after rescuer has resolved
+    const deleteAlert = async (alertId) => {
+        if (!window.confirm('Are you sure you want to delete this alert?')) return;
         
-        const connectWebSocket = () => {
-            if (!isMounted) return;
+        try {
+            const token = localStorage.getItem('token');
             
-            try {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.close();
+            await axios.delete(
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 }
-                
-                ws = new WebSocket('wss://sos-alert-app-backend.onrender.com/ws/alerts');
-
-                ws.onopen = () => {
-                    if (isMounted) {
-                        console.log("🔌 UserDashboard WebSocket Connected");
-                        setWsConnected(true);
-                        
-                        // ✅ Authenticate
-                        const token = localStorage.getItem('token');
-                        if (token && userId) {
-                            ws.send(JSON.stringify({
-                                type: 'auth',
-                                token: token,
-                                user_id: userId
-                            }));
-                        }
-                    }
-                    if (reconnectTimer) clearTimeout(reconnectTimer);
-                };
-                
-                ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        console.log("📨 UserDashboard WebSocket:", data);
-                        
-                        // ✅ Handle different event types
-                        switch(data.type || data.event) {
-                            case 'new_alert':
-                            case 'NEW_SOS':
-                                // ✅ Only refresh if it's the current user's alert
-                                if (data.alert?.user_id === userId || data.payload?.user_id === userId) {
-                                    fetchMyAlerts();
-                                    // Show notification
-                                    new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3')
-                                        .play()
-                                        .catch(() => console.log("Audio play blocked"));
-                                }
-                                break;
-                                
-                            case 'alert_assigned':
-                            case 'ALERT_CLAIMED':
-                                // ✅ Update the alert status
-                                const alertId = data.alert_id || data.payload?.id;
-                                setAlerts(prev => 
-                                    prev.map(a => 
-                                        a.id === alertId
-                                            ? { ...a, status: 'HELP_ON_THE_WAY', assigned_to: data.responder_type || data.payload?.assigned_to }
-                                            : a
-                                    )
-                                );
-                                break;
-                                
-                            case 'alert_resolved':
-                            case 'INCIDENT_RESOLVED':
-                                const resolvedId = data.alert_id || data.payload?.id;
-                                setAlerts(prev => 
-                                    prev.map(a => 
-                                        a.id === resolvedId
-                                            ? { ...a, status: 'RESOLVED', resolved_by: data.responder_type || data.payload?.resolved_by }
-                                            : a
-                                    )
-                                );
-                                break;
-                                
-                            case 'user_confirmed':
-                            case 'USER_CONFIRMED_ARRIVAL':
-                                const confirmedId = data.alert_id || data.payload?.id;
-                                setAlerts(prev => 
-                                    prev.map(a => 
-                                        a.id === confirmedId
-                                            ? { ...a, user_confirmed_arrival: true }
-                                            : a
-                                    )
-                                );
-                                break;
-                                
-                            default:
-                                // If it's a full alert object for this user
-                                if (data.id && data.user_id === userId) {
-                                    fetchMyAlerts();
-                                }
-                        }
-                    } catch (err) {
-                        console.error("WebSocket parse error:", err);
-                    }
-                };
-                
-                ws.onerror = (err) => {
-                    console.error("WebSocket Error:", err);
-                    setWsConnected(false);
-                };
-                
-                ws.onclose = (event) => {
-                    if (isMounted) {
-                        console.log(`⚠️ WebSocket Disconnected (${event.code})`);
-                        setWsConnected(false);
-                        if (event.code !== 1000) {
-                            reconnectTimer = setTimeout(connectWebSocket, 5000);
-                        }
-                    }
-                };
-            } catch (err) {
-                console.error("WebSocket connection error:", err);
-                reconnectTimer = setTimeout(connectWebSocket, 5000);
-            }
-        };
-        
-        if (userId) {
-            connectWebSocket();
-            fetchMyAlerts();
+            );
+            
+            // ✅ Remove from local state
+            setAlerts(prev => prev.filter(a => a.id !== alertId));
+            
+            alert('✅ Alert deleted successfully');
+            
+        } catch (err) {
+            console.error("Error deleting alert:", err);
+            alert(`Error: ${err.response?.data?.detail || "Failed to delete alert"}`);
         }
-        
-        return () => {
-            isMounted = false;
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.close(1000, "Component unmounting");
-            }
-        };
-    }, [userId, fetchMyAlerts]);
-
-    // ✅ Loading state
-    if (loading) {
-        return (
-            <div className="h-screen bg-slate-900 text-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
-                    <p>Loading your dashboard...</p>
-                    <p className="text-sm text-slate-400 mt-2">WebSocket: {wsConnected ? "✅ Connected" : "⏳ Connecting..."}</p>
-                </div>
-            </div>
-        );
-    }
+    };
 
     // ✅ Render
     return (
@@ -385,6 +455,17 @@ const UserDashboard = () => {
                                         ) : alert.status === 'RESOLVED' ? (
                                             <span className="text-green-500">✅ Resolved</span>
                                         ) : "—"}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        {/* ✅ Delete button only if resolved */}
+                                        {alert.status === 'RESOLVED' && (
+                                            <button 
+                                                onClick={() => deleteAlert(alert.id)} 
+                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                            >
+                                                🗑️ Delete
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))
