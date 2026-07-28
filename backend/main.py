@@ -552,12 +552,53 @@ def get_nearest_station(lat: float, lon: float, radius: float = 10000, db: Sessi
 
 
 # main.py - Update the rescuer location endpoint
+# @app.patch("/rescuers/location")
+# def update_rescuer_location(
+#     location_data: dict,  # Accept JSON body
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(get_current_user)  # Optional: add auth
+# ):
+#     try:
+#         responder_type = location_data.get("responder_type")
+#         latitude = location_data.get("latitude")
+#         longitude = location_data.get("longitude")
+        
+#         if not responder_type or latitude is None or longitude is None:
+#             raise HTTPException(
+#                 status_code=400, 
+#                 detail="Missing required fields: responder_type, latitude, longitude"
+#             )
+        
+#         # Update all active alerts for this responder type
+#         alerts = db.query(models.Alert).filter(
+#             models.Alert.responder_type == responder_type,
+#             models.Alert.status.in_(["ASSIGNED", "HELP_ON_THE_WAY"])
+#         ).all()
+        
+#         for alert in alerts:
+#             alert.responder_lat = latitude
+#             alert.responder_lon = longitude
+        
+#         db.commit()
+        
+#         return {
+#             "status": "location updated",
+#             "updated_alerts": len(alerts),
+#             "position": {"lat": latitude, "lon": longitude}
+#         }
+        
+#     except Exception as e:
+#         print(f"Error updating location: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
+
+
+
+# main.py - Updated for EmergencyAlert model
 @app.patch("/rescuers/location")
 def update_rescuer_location(
-    location_data: dict,  # Accept JSON body
-    db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(get_current_user)  # Optional: add auth
+    location_data: dict,
+    db: Session = Depends(database.get_db)
 ):
     try:
         responder_type = location_data.get("responder_type")
@@ -570,10 +611,12 @@ def update_rescuer_location(
                 detail="Missing required fields: responder_type, latitude, longitude"
             )
         
-        # Update all active alerts for this responder type
-        alerts = db.query(models.Alert).filter(
-            models.Alert.responder_type == responder_type,
-            models.Alert.status.in_(["ASSIGNED", "HELP_ON_THE_WAY"])
+        # ✅ Use the correct model name - CHANGE THIS to match your model
+        from models import EmergencyAlert  # or whatever your model is called
+        
+        alerts = db.query(EmergencyAlert).filter(
+            EmergencyAlert.responder_type == responder_type,
+            EmergencyAlert.status.in_(["ASSIGNED", "HELP_ON_THE_WAY"])
         ).all()
         
         for alert in alerts:
@@ -584,13 +627,16 @@ def update_rescuer_location(
         
         return {
             "status": "location updated",
-            "updated_alerts": len(alerts),
-            "position": {"lat": latitude, "lon": longitude}
+            "updated_alerts": len(alerts)
         }
         
     except Exception as e:
         print(f"Error updating location: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
 
 
 
