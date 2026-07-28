@@ -452,6 +452,67 @@ const RescueDashboard = ({ responderType }) => {
     const watchIdRef = useRef(null);
     const [userRole] = useState(localStorage.getItem('userRole') || responderType);
 
+
+
+
+     // ✅ Fetch Police Stations
+    const fetchPoliceStations = useCallback(async () => {
+        try {
+            console.log("📡 Fetching police stations...");
+            const token = localStorage.getItem('token');
+            const response = await axios.get(
+                'https://sos-alert-app-backend.onrender.com/police-posts',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            console.log("✅ Police stations fetched:", response.data.length);
+            setPoliceStations(response.data);
+        } catch (err) {
+            console.error("Error fetching police stations:", err);
+        }
+    }, []);
+
+    // ✅ Fetch Active Alerts
+    const fetchActiveAlerts = useCallback(async () => {
+        try {
+            console.log("📡 Fetching active alerts...");
+            const token = localStorage.getItem('token');
+            const response = await axios.get(
+                'https://sos-alert-app-backend.onrender.com/admin/alerts/active',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            console.log("✅ Active alerts fetched:", response.data.length);
+            
+            // ✅ Filter for this responder type
+            const filteredAlerts = response.data.filter(a => 
+                !a.claimed_by_type || a.claimed_by_type === responderType
+            );
+            setAlerts(filteredAlerts);
+        } catch (err) {
+            console.error("Error fetching alerts:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [responderType]);
+
+    // ✅ Initial data fetch
+    useEffect(() => {
+        fetchActiveAlerts();
+        fetchPoliceStations();
+    }, []);
+
+
+
+
+
+
     // ✅ Get Rescuer's real-time location
     useEffect(() => {
         if (navigator.geolocation) {
@@ -581,6 +642,12 @@ const RescueDashboard = ({ responderType }) => {
             }
         };
     }, []);
+
+
+
+    // Add to RescuerDashboard.jsx - right after fetching
+    console.log("📊 RescuerDashboard - Alerts:", alerts);
+    console.log("📊 RescuerDashboard - Stations:", policeStations);
 
 
     // --- Component Render ---

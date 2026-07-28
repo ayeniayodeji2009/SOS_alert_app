@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, CheckCircle, MapPin, Phone, Navigation } from 'lucide-react';
 import '../App.css';
@@ -12,27 +13,58 @@ const UserDashboard = () => {
     const [wsConnected, setWsConnected] = useState(false);
     const [nearestStation, setNearestStation] = useState(null);
     const [loadingActions, setLoadingActions] = useState({});
+    const navigate = useNavigate();
 
-    // ✅ Load user data on mount
+   
+
+     // ✅ Load user data from localStorage - FIXED
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        
-        if (!token || !storedUser) {
-            // Redirect to login if not authenticated
-            window.location.href = '/login';
-            return;
-        }
-        
         try {
+            console.log("🔍 Checking localStorage...");
+            const token = localStorage.getItem('token');
+            const storedUser = localStorage.getItem('user');
+            
+            console.log("Token exists:", !!token);
+            console.log("Stored user:", storedUser);
+            
+            if (!token || !storedUser) {
+                console.error('❌ No token or user data found');
+                navigate('/login');
+                return;
+            }
+            
             const userData = JSON.parse(storedUser);
+            console.log("✅ Parsed user data:", userData);
+            
+            // ✅ Get user ID - try multiple possible field names
+            const id = userData.id || userData.user_id || userData.userId;
+            console.log("✅ User ID found:", id);
+            
+            if (!id) {
+                console.error('❌ No user ID found in user data:', userData);
+                setError('Invalid user data. Please login again.');
+                setTimeout(() => navigate('/login'), 3000);
+                return;
+            }
+            
             setUser(userData);
-            setUserId(userData.id);
-        } catch (e) {
-            console.error('Error parsing user data:', e);
-            window.location.href = '/login';
+            setUserId(id);
+            
+            // ✅ Set axios default header
+            const token = localStorage.getItem('token');
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            
+            // ✅ Fetch alerts immediately after user is set
+            fetchMyAlerts(id);
+            
+        } catch (err) {
+            console.error('❌ Error loading user data:', err);
+            setError('Failed to load user data. Please login again.');
+            setTimeout(() => navigate('/login'), 3000);
         }
     }, []);
+
+
 
     // ✅ Fetch nearest police station
     const fetchNearestStation = useCallback(async (lat, lon) => {
@@ -47,6 +79,9 @@ const UserDashboard = () => {
             console.error('Error fetching nearest station:', err);
         }
     }, []);
+
+
+
 
     // ✅ Fetch user's alerts
     const fetchMyAlerts = useCallback(async () => {
@@ -72,32 +107,43 @@ const UserDashboard = () => {
         }
     }, [userId]);
 
-    // ✅ Trigger SOS
+    
+
+
+    // Add to UserDashboard.jsx - right after fetching
+    console.log("📊 UserDashboard - Alerts state:", alerts);
+    console.log("📊 UserDashboard - User ID:", userId);
+
+     // ✅ Trigger SOS - FIXED to show alert immediately
     const triggerSOS = async () => {
-        if (!userId) return;
+        if (!userId) {
+            alert("User not authenticated. Please login again.");
+            return;
+        }
         
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            const { latitude, longitude } = pos.coords;
-            
-            // Find nearest station
-            await fetchNearestStation(latitude, longitude);
-            
             const payload = { 
                 user_id: userId,
                 username: user?.username || "Unknown User", 
-                lat: latitude, 
-                lon: longitude 
+                lat: pos.coords.latitude, 
+                lon: pos.coords.longitude 
             };
-            
             try {
+                const token = localStorage.getItem('token');
                 const res = await axios.post(
                     'https://sos-alert-app-backend.onrender.com/alerts/trigger',
-                    payload
+                    payload,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
                 );
+                alert(`🚨 SOS SENT! Nearest Station: ${res.data.nearest_station}`);
                 
-                const stationName = res.data.nearest_station || nearestStation?.name || 'Unknown';
-                alert(`🚨 SOS SENT! Nearest Station: ${stationName}`);
+                // ✅ Refresh alerts immediately
                 await fetchMyAlerts();
+                
             } catch (err) {
                 alert("Error sending SOS: " + (err.response?.data?.detail || err.message));
                 console.error("SOS Error:", err);
@@ -107,6 +153,7 @@ const UserDashboard = () => {
             console.error("Geolocation error:", err);
         });
     };
+
 
     // ✅ Confirm Arrival
     // const confirmArrival = async (alertId) => {
