@@ -486,9 +486,6 @@ async def confirm_arrival(
 
 
 
-
-
-
 @app.get("/alerts") # This matches the URL your frontend is calling
 async def get_alerts(db: Session = Depends(database.get_db)):
     alerts = db.query(models.EmergencyAlert).all()
@@ -499,6 +496,84 @@ async def get_alerts(db: Session = Depends(database.get_db)):
 
 
 
+
+# ✅ Get nearest police/amotekun station
+@app.get("/police-posts/nearby")
+def get_nearest_station(lat: float, lon: float, radius: float = 10000, db: Session = Depends(database.get_db)):
+    # Find nearest station using PostGIS
+    from sqlalchemy import func
+    
+    station = db.query(
+        models.PolicePost,
+        func.ST_Distance(
+            models.PolicePost.location,
+            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+        ).label('distance')
+    ).filter(
+        func.ST_DWithin(
+            models.PolicePost.location,
+            func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326),
+            radius
+        )
+    ).order_by('distance').first()
+    
+    if station:
+        return {
+            "id": station[0].id,
+            "name": station[0].name,
+            "area_command": station[0].area_command,
+            "phone_no": station[0].phone_no,
+            "latitude": station[0].latitude,
+            "longitude": station[0].longitude
+        }
+    return None
+
+# ✅ Update rescuer location
+@app.patch("/rescuers/location")
+def update_rescuer_location(
+    responder_type: str,
+    latitude: float,
+    longitude: float,
+    db: Session = Depends(database.get_db)
+):
+    # Store in a RescuerLocation table or update alert's responder location
+    # For simplicity, update all active alerts for this responder
+    alerts = db.query(models.Alert).filter(
+        models.Alert.claimed_by_type == responder_type,
+        models.Alert.status == "HELP_ON_THE_WAY"
+    ).all()
+    
+    for alert in alerts:
+        alert.responder_lat = latitude
+        alert.responder_lon = longitude
+    
+    db.commit()
+    return {"status": "location updated"}
+
+
+
+# ✅ Delete alert (only after resolved)
+@app.delete("/alerts/{alert_id}")
+def delete_alert(
+    alert_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    alert = db.query(models.Alert).filter(models.Alert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    # ✅ Only allow deletion if resolved
+    if alert.status != "RESOLVED":
+        raise HTTPException(status_code=400, detail="Alert must be resolved before deletion")
+    
+    # ✅ Only the reporter can delete
+    if alert.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own alerts")
+    
+    db.delete(alert)
+    db.commit()
+    return {"status": "alert deleted"}
 
 
 
