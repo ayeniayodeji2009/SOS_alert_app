@@ -615,7 +615,7 @@ def update_rescuer_location(
         from models import EmergencyAlert  # or whatever your model is called
         
         alerts = db.query(EmergencyAlert).filter(
-            EmergencyAlert.responder_type == responder_type,
+            EmergencyAlert.claimed_by_type == responder_type,
             EmergencyAlert.status.in_(["ASSIGNED", "HELP_ON_THE_WAY"])
         ).all()
         
