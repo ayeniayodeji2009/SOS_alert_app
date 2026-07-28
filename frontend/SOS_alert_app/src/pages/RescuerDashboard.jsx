@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine';
-import { Shield, MapPin, User, CheckCircle, Navigation, Phone } from 'lucide-react';
+import { Shield, MapPin, User, CheckCircle, Navigation, Phone, Target } from 'lucide-react';
 import '../App.css';
 
 // Fix for default marker icons
