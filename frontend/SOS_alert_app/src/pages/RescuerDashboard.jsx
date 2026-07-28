@@ -474,54 +474,113 @@ const RescueDashboard = ({ responderType }) => {
     }, []);
 
     // ✅ Update rescuer location in backend
+    // const updateRescuerLocation = async (lat, lon) => {
+    //     try {
+    //         await axios.patch(
+    //             `https://sos-alert-app-backend.onrender.com/rescuers/location`,
+    //             {
+    //                 responder_type: responderType,
+    //                 latitude: lat,
+    //                 longitude: lon
+    //             },
+    //             {
+    //                 headers: {
+    //                     'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //                 }
+    //             }
+    //         );
+    //     } catch (err) {
+    //         console.error("Error updating location:", err);
+    //     }
+    // };
+
+    // // ✅ Find nearest station when claiming
+    // const handleClaim = async (e, alertId) => {
+    //     // ... existing claim logic
+        
+    //     // ✅ Find nearest station
+    //     const alert = alerts.find(a => a.id === alertId);
+    //     if (alert) {
+    //         const station = await findNearestStation(alert.lat, alert.lon);
+    //         setNearestStation(station);
+    //         setIsTracking(true);
+    //     }
+    // };
+
+    // // ✅ Find nearest station
+    // const findNearestStation = async (lat, lon) => {
+    //     try {
+    //         const response = await axios.get(
+    //             `https://sos-alert-app-backend.onrender.com/police-posts/nearby?lat=${lat}&lon=${lon}&radius=10000`
+    //         );
+    //         if (response.data && response.data.length > 0) {
+    //             return response.data[0];
+    //         }
+    //         return null;
+    //     } catch (err) {
+    //         console.error("Error finding nearest station:", err);
+    //         return null;
+    //     }
+    // };
+
+    // ✅ Update rescuer location in backend
     const updateRescuerLocation = async (lat, lon) => {
         try {
+            const token = localStorage.getItem('token');
+            
             await axios.patch(
-                `https://sos-alert-app-backend.onrender.com/rescuers/location`,
+                'https://sos-alert-app-backend.onrender.com/rescuers/location',
                 {
-                    responder_type: responderType,
+                    responder_type: responderType,  // 'POLICE' or 'AMOTEKUN'
                     latitude: lat,
                     longitude: lon
                 },
                 {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 }
             );
         } catch (err) {
-            console.error("Error updating location:", err);
+            console.error("Error updating location:", err.response?.data || err.message);
         }
     };
 
-    // ✅ Find nearest station when claiming
-    const handleClaim = async (e, alertId) => {
-        // ... existing claim logic
-        
-        // ✅ Find nearest station
-        const alert = alerts.find(a => a.id === alertId);
-        if (alert) {
-            const station = await findNearestStation(alert.lat, alert.lon);
-            setNearestStation(station);
-            setIsTracking(true);
-        }
-    };
-
-    // ✅ Find nearest station
-    const findNearestStation = async (lat, lon) => {
-        try {
-            const response = await axios.get(
-                `https://sos-alert-app-backend.onrender.com/police-posts/nearby?lat=${lat}&lon=${lon}&radius=10000`
+    // ✅ Get Rescuer's real-time location with better error handling
+    useEffect(() => {
+        if (navigator.geolocation) {
+            watchIdRef.current = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    setMyLocation([lat, lon]);
+                    // ✅ Update backend with current location
+                    updateRescuerLocation(lat, lon);
+                },
+                (err) => {
+                    console.error("Location error:", err.message);
+                    // ✅ If location is denied, use a default or show error
+                    if (err.code === 1) {
+                        alert('Please enable location services for this app');
+                    }
+                },
+                { 
+                    enableHighAccuracy: true, 
+                    timeout: 10000,
+                    maximumAge: 5000
+                }
             );
-            if (response.data && response.data.length > 0) {
-                return response.data[0];
-            }
-            return null;
-        } catch (err) {
-            console.error("Error finding nearest station:", err);
-            return null;
+        } else {
+            console.error("Geolocation not supported");
         }
-    };
+        
+        return () => {
+            if (watchIdRef.current) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+            }
+        };
+    }, []);
 
 
     // --- Component Render ---
