@@ -436,9 +436,21 @@ const LiveTracking = ({ userPos, responderPos, color = '#3b82f6' }) => {
 // ✅ Main RescuerDashboard Component
 const RescueDashboard = ({ responderType }) => {
     // ... existing state
+    // const [nearestStation, setNearestStation] = useState(null);
+    // const [isTracking, setIsTracking] = useState(false);
+    // const [wsConnected, setWsConnected] = useState(false);
+    // const watchIdRef = useRef(null);
+    const [alerts, setAlerts] = useState([]);
+    const [policeStations, setPoliceStations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [mapCenter, setMapCenter] = useState([6.5244, 3.3792]);
+    const [myLocation, setMyLocation] = useState(null);
+    const [loadingActions, setLoadingActions] = useState({});
+    const [wsConnected, setWsConnected] = useState(false); // ✅ ADD THIS
     const [nearestStation, setNearestStation] = useState(null);
     const [isTracking, setIsTracking] = useState(false);
     const watchIdRef = useRef(null);
+    const [userRole] = useState(localStorage.getItem('userRole') || responderType);
 
     // ✅ Get Rescuer's real-time location
     useEffect(() => {
