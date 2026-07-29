@@ -51,7 +51,7 @@ const UserDashboard = () => {
             setUserId(id);
             
             // ✅ Set axios default header
-            const token = localStorage.getItem('token');
+            token = localStorage.getItem('token');
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
             // ✅ Fetch alerts immediately after user is set
