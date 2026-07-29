@@ -84,26 +84,59 @@ const UserDashboard = () => {
 
 
     // ✅ Fetch user's alerts
-    const fetchMyAlerts = useCallback(async () => {
-        if (!userId) return;
+    // const fetchMyAlerts = useCallback(async () => {
+    //     if (!userId) return;
+        
+    //     try {
+    //         console.log("Fetching alerts for user ID:", userId);
+    //         const res = await axios.get(
+    //             `https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`
+    //         );
+    //         console.log("Fetched alerts:", res.data);
+            
+    //         const activeAlerts = res.data.filter(a => !a.is_deleted_by_user);
+    //         setAlerts(activeAlerts);
+    //     } catch (err) {
+    //         console.error("Error fetching alerts:", err);
+    //         if (err.response?.status === 404) {
+    //             console.log("No alerts found for this user");
+    //             setAlerts([]);
+    //         }
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // }, [userId]);
+    // UserDashboard.jsx - Add token to request
+    const fetchMyAlerts = useCallback(async (userIdParam) => {
+        const userIdToUse = userIdParam || userId;
+        
+        if (!userIdToUse) {
+            console.log("⚠️ No userId available, skipping fetch");
+            setLoading(false);
+            return;
+        }
         
         try {
-            console.log("Fetching alerts for user ID:", userId);
+            setLoading(true);
+            console.log(`📡 Fetching alerts for user ID: ${userIdToUse}`);
+            const token = localStorage.getItem('token');
+            
             const res = await axios.get(
-                `https://sos-alert-app-backend.onrender.com/alerts/history/${userId}`
+                `https://sos-alert-app-backend.onrender.com/alerts/history/${userIdToUse}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`  // ✅ Add this
+                    }
+                }
             );
-            console.log("Fetched alerts:", res.data);
+            console.log("✅ Fetched alerts:", res.data);
             
             const activeAlerts = res.data.filter(a => !a.is_deleted_by_user);
             setAlerts(activeAlerts);
+            setError(null);
         } catch (err) {
-            console.error("Error fetching alerts:", err);
-            if (err.response?.status === 404) {
-                console.log("No alerts found for this user");
-                setAlerts([]);
-            }
-        } finally {
-            setLoading(false);
+            console.error("❌ Error fetching alerts:", err);
+            // ... error handling
         }
     }, [userId]);
 
