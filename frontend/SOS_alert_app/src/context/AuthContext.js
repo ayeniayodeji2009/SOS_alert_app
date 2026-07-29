@@ -92,6 +92,10 @@ const login = async (username, password) => {
         setUser(user);
         
         console.log('✅ Login successful:', { id: user.id, username: user.username });
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('userRole', user.role || 'user');
+        localStorage.setItem('token', access_token); // Store the token in localStorage testing
+        
         
         return { token: access_token, user };
         
