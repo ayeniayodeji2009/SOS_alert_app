@@ -21,6 +21,9 @@ import asyncio
 # --- CONFIGURATION ---
 SECRET_KEY = "YOUR_SUPER_SECRET_KEY" 
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 app = FastAPI(title="Uncle Mayor SOS API")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
@@ -241,8 +244,39 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     token = create_access_token({"sub": user.username, "id": user.id})
     return {"access_token": token, "token_type": "bearer"}
 
-# --- SOS CORE LOGIC ---
 
+
+
+
+
+
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(database.get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        user = db.query(models.User).filter(models.User.username == username).first()
+        if user is None:
+            raise credentials_exception
+        return user
+    except JWTError:
+        raise credentials_exception
+
+
+
+
+
+# --- SOS CORE LOGIC ---
 @app.post("/alerts/trigger", response_model=schemas.AlertResponse)
 async def trigger_sos(alert_data: schemas.AlertCreate, background_tasks: BackgroundTasks, db: Session = Depends(database.get_db)):
     new_alert = models.EmergencyAlert(
