@@ -275,11 +275,37 @@ async def trigger_sos(alert_data: schemas.AlertCreate, background_tasks: Backgro
     background_tasks.add_task(notify_emergency_contacts, new_alert.user_id, new_alert.lat, new_alert.lon, db)
     return new_alert
 
-@app.get("/admin/alerts/active", response_model=List[schemas.AlertResponse])
+
+
+# @app.get("/admin/alerts/active", response_model=List[schemas.AlertResponse])
+# def get_active_alerts(db: Session = Depends(database.get_db)):
+#     return db.query(models.EmergencyAlert).filter(models.EmergencyAlert.status != "RESOLVED").order_by(models.EmergencyAlert.created_at.desc()).all()
+
+# ✅ Active Alerts Endpoint
+@app.get("/admin/alerts/active")
 def get_active_alerts(db: Session = Depends(database.get_db)):
-    return db.query(models.EmergencyAlert).filter(models.EmergencyAlert.status != "RESOLVED").order_by(models.EmergencyAlert.created_at.desc()).all()
-
-
+    """Get all active alerts"""
+    alerts = db.query(models.EmergencyAlert).filter(
+        models.EmergencyAlert.status.in_(["PENDING", "ASSIGNED", "HELP_ON_THE_WAY"])
+    ).order_by(models.EmergencyAlert.created_at.desc()).all()
+    
+    return [{
+        "id": a.id,
+        "user_id": a.user_id,
+        "username": a.username,
+        "incident_number": a.incident_number,
+        "lat": a.lat,
+        "lon": a.lon,
+        "status": a.status,
+        "claimed_by_type": a.claimed_by_type,
+        "responder_name": a.responder_name,
+        "responder_lat": a.responder_lat,
+        "responder_lon": a.responder_lon,
+        "user_confirmed_arrival": a.user_confirmed_arrival,
+        "created_at": a.created_at.isoformat() if a.created_at else None,
+        "responded_at": a.responded_at.isoformat() if a.responded_at else None,
+        "resolved_at": a.resolved_at.isoformat() if a.resolved_at else None,
+    } for a in alerts]
 
 
 
@@ -324,13 +350,63 @@ def health_check():
 
 
 
-@app.get("/alerts/history/{user_id}", response_model=List[schemas.AlertHistory])
-def get_user_alert_history(user_id: int, db: Session = Depends(database.get_db)):
-    # Only show alerts that the user hasn't "soft-deleted"
-    return db.query(models.EmergencyAlert).filter(
-        models.EmergencyAlert.user_id == user_id,
-        models.EmergencyAlert.is_deleted_by_user == False
-    ).order_by(models.EmergencyAlert.created_at.desc()).all()
+# @app.get("/alerts/history/{user_id}", response_model=List[schemas.AlertHistory])
+# def get_user_alert_history(user_id: int, db: Session = Depends(database.get_db)):
+#     # Only show alerts that the user hasn't "soft-deleted"
+#     return db.query(models.EmergencyAlert).filter(
+#         models.EmergencyAlert.user_id == user_id,
+#         models.EmergencyAlert.is_deleted_by_user == False
+#     ).order_by(models.EmergencyAlert.created_at.desc()).all()
+
+
+
+
+# main.py - Add this endpoint
+
+@app.get("/alerts/history/{user_id}")
+def get_user_alert_history(
+    user_id: int, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)  # Optional: add auth
+):
+    """Get all alerts for a specific user"""
+    try:
+        # Optional: Check if the user is requesting their own alerts
+        if current_user.id != user_id:
+            # Allow admin to view any user's alerts
+            if current_user.role != "admin":
+                raise HTTPException(status_code=403, detail="Access denied")
+        
+        alerts = db.query(models.EmergencyAlert).filter(
+            models.EmergencyAlert.user_id == user_id,
+            models.EmergencyAlert.is_deleted_by_user == False
+        ).order_by(models.EmergencyAlert.created_at.desc()).all()
+        
+        result = []
+        for alert in alerts:
+            result.append({
+                "id": alert.id,
+                "user_id": alert.user_id,
+                "username": alert.username,
+                "incident_number": alert.incident_number,
+                "lat": alert.lat,
+                "lon": alert.lon,
+                "status": alert.status,
+                "claimed_by_type": alert.claimed_by_type,
+                "responder_name": alert.responder_name,
+                "user_confirmed_arrival": alert.user_confirmed_arrival,
+                "created_at": alert.created_at.isoformat() if alert.created_at else None,
+                "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
+            })
+        
+        return result
+    except Exception as e:
+        print(f"Error fetching user alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
 
 
 
@@ -668,6 +744,95 @@ def delete_alert(
 
 
 
+
+
+# main.py - Add this endpoint
+
+@app.get("/police-posts")
+def get_police_posts(db: Session = Depends(database.get_db)):
+    """Get all police posts"""
+    try:
+        posts = db.query(models.PolicePost).all()
+        
+        # Convert to JSON response
+        result = []
+        for post in posts:
+            result.append({
+                "id": post.id,
+                "name": post.name,
+                "area_command": post.area_command,
+                "phone_no": post.phone_no,
+                "latitude": post.latitude if hasattr(post, 'latitude') else None,
+                "longitude": post.longitude if hasattr(post, 'longitude') else None,
+                # If using PostGIS geometry
+                # "latitude": post.location.y if post.location else None,
+                # "longitude": post.location.x if post.location else None,
+            })
+        
+        return result
+    except Exception as e:
+        print(f"Error fetching police posts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/police-posts/{post_id}")
+def get_police_post(post_id: int, db: Session = Depends(database.get_db)):
+    """Get a specific police post by ID"""
+    post = db.query(models.PolicePost).filter(models.PolicePost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Police post not found")
+    
+    return {
+        "id": post.id,
+        "name": post.name,
+        "area_command": post.area_command,
+        "phone_no": post.phone_no,
+        "latitude": post.latitude if hasattr(post, 'latitude') else None,
+        "longitude": post.longitude if hasattr(post, 'longitude') else None,
+    }
+
+
+
+
+
+
+
+
+
+
+# main.py - Add this endpoint
+
+@app.get("/admin/alerts/active")
+def get_active_alerts(db: Session = Depends(database.get_db)):
+    """Get all active alerts for admin/rescuer dashboards"""
+    try:
+        alerts = db.query(models.EmergencyAlert).filter(
+            models.EmergencyAlert.status.in_(["PENDING", "ASSIGNED", "HELP_ON_THE_WAY"])
+        ).order_by(models.EmergencyAlert.created_at.desc()).all()
+        
+        result = []
+        for alert in alerts:
+            result.append({
+                "id": alert.id,
+                "user_id": alert.user_id,
+                "username": alert.username,
+                "incident_number": alert.incident_number,
+                "lat": alert.lat,
+                "lon": alert.lon,
+                "status": alert.status,
+                "claimed_by_type": alert.claimed_by_type,
+                "responder_name": alert.responder_name,
+                "responder_lat": alert.responder_lat,
+                "responder_lon": alert.responder_lon,
+                "user_confirmed_arrival": alert.user_confirmed_arrival,
+                "created_at": alert.created_at.isoformat() if alert.created_at else None,
+                "responded_at": alert.responded_at.isoformat() if alert.responded_at else None,
+                "resolved_at": alert.resolved_at.isoformat() if alert.resolved_at else None,
+            })
+        
+        return result
+    except Exception as e:
+        print(f"Error fetching active alerts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 # from multiprocessing import get_context
 # from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 
