@@ -401,7 +401,7 @@ def health_check():
 def get_user_alert_history(
     user_id: int, 
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(get_current_user)  # Optional: add auth
+    # current_user: models.User = Depends(get_current_user)  # Optional: add auth
 ):
     """Get all alerts for a specific user"""
     try:
