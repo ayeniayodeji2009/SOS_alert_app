@@ -468,6 +468,7 @@ const RescueDashboard = ({ responderType }) => {
                     }
                 }
             );
+            setWsConnected(true); // ✅ Set WebSocket connected after fetching stations
             console.log("✅ Police stations fetched:", response.data.length);
             setPoliceStations(response.data);
         } catch (err) {
@@ -491,16 +492,19 @@ const RescueDashboard = ({ responderType }) => {
             console.log("✅ Active alerts fetched:", response.data.length);
             
             // ✅ Filter for this responder type
-            const filteredAlerts = response.data.filter(a => 
-                !a.claimed_by_type || a.claimed_by_type === responderType
-            );
-            setAlerts(filteredAlerts);
+            // const filteredAlerts = response.data.filter(a => 
+            //     !a.claimed_by_type || a.claimed_by_type === responderType
+            // );
+
+            // ✅ Show ALL alerts - no filtering except RESOLVED
+            const allAlerts = response.data.filter(a => a.status !== 'RESOLVED');
+            setAlerts(allAlerts);
         } catch (err) {
             console.error("Error fetching alerts:", err);
         } finally {
             setLoading(false);
         }
-    }, [responderType]);
+    }, []);
 
     // ✅ Initial data fetch
     useEffect(() => {
@@ -740,6 +744,82 @@ const RescueDashboard = ({ responderType }) => {
                         })
                     )}
                 </div> */}
+
+
+                // RescuerDashboard.jsx - Sidebar rendering
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <h2 className="text-xs font-bold text-slate-500 uppercase px-2">
+                        Active Emergencies ({alerts.filter(a => a.status !== 'RESOLVED').length})
+                    </h2>
+                    
+                    {alerts.filter(a => a.status !== 'RESOLVED').length === 0 ? (
+                        <div className="py-20 text-center opacity-30 text-white">
+                            <CheckCircle size={48} className="mx-auto mb-2" />
+                            <p>No active alerts</p>
+                        </div>
+                    ) : (
+                        alerts.filter(a => a.status !== 'RESOLVED').map(alert => {
+                            // ✅ Debug: Log each alert being rendered
+                            console.log("🔴 Rendering alert:", alert.id, alert.status, alert.username);
+                            
+                            return (
+                                <div key={alert.id} className="p-4 rounded-xl border-l-4 transition-all bg-slate-700 border-red-500 animate-pulse">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <span className="text-[10px] font-mono text-slate-400">#{alert.incident_number || alert.id}</span>
+                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-500 text-white">
+                                            {alert.status}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-white font-bold flex items-center gap-2 mb-2">
+                                        <User size={16} className="text-slate-400"/> {alert.username || 'Anonymous'}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mb-2">
+                                        📍 {alert.lat}, {alert.lon}
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-2 gap-2 mt-4">
+                                        <button 
+                                            onClick={() => handleClaim(alert.id)}
+                                            disabled={alert.claimed_by_type === responderType || alert.claimed_by_type !== null}
+                                            className={`py-2 rounded font-bold text-xs uppercase transition-all ${
+                                                alert.claimed_by_type === responderType ? 'bg-blue-600 text-white cursor-not-allowed' :
+                                                alert.claimed_by_type !== null ? 'bg-slate-600 text-slate-400 cursor-not-allowed' :
+                                                'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
+                                            }`}
+                                        >
+                                            {alert.claimed_by_type === responderType ? '✅ En Route' :
+                                            alert.claimed_by_type !== null ? `Assigned to ${alert.claimed_by_type}` :
+                                            'Attend'}
+                                        </button>
+                                        
+                                        <button 
+                                            disabled={alert.claimed_by_type !== responderType || !alert.user_confirmed_arrival}
+                                            className={`py-2 rounded font-bold text-xs uppercase transition-all ${
+                                                alert.claimed_by_type === responderType && alert.user_confirmed_arrival
+                                                    ? 'border border-green-500 text-green-500 hover:bg-green-500 hover:text-white' 
+                                                    : 'border-slate-600 text-slate-600 opacity-50 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            Resolve
+                                        </button>
+                                    </div>
+                                    
+                                    {alert.claimed_by_type && alert.claimed_by_type !== responderType && (
+                                        <p className="text-[10px] text-yellow-500 mt-2 text-center">
+                                            ⏳ Attending to by {alert.claimed_by_type}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+
+
+
+
+
                 {nearestStation && (
                     <div className="p-4 bg-blue-900/20 border border-blue-500 rounded-lg mb-4">
                         <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2">
