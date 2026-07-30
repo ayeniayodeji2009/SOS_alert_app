@@ -654,6 +654,104 @@ const RescueDashboard = ({ responderType }) => {
     console.log("📊 RescuerDashboard - Stations:", policeStations);
 
 
+
+
+
+    // RescuerDashboard.jsx - Add this function
+    const handleClaim = async (alertId) => {
+        try {
+            console.log(`📞 Claiming alert: ${alertId}`);
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.patch(
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/respond`,
+                {
+                    responder_type: responderType,
+                    responder_lat: myLocation ? myLocation[0] : null,
+                    responder_lon: myLocation ? myLocation[1] : null
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log("✅ Claim successful:", response.data);
+            
+            // ✅ Update local state to reflect the claim
+            setAlerts(prevAlerts => 
+                prevAlerts.map(alert => 
+                    alert.id === alertId 
+                        ? { ...alert, claimed_by_type: responderType, status: 'HELP_ON_THE_WAY' }
+                        : alert
+                )
+            );
+            
+            // ✅ Refresh alerts from server
+            fetchActiveAlerts();
+            
+            alert(`✅ Alert claimed by ${responderType}!`);
+            
+        } catch (err) {
+            console.error("❌ Error claiming alert:", err);
+            alert(`❌ Error: ${err.response?.data?.detail || err.message}`);
+        }
+    };
+
+
+
+
+
+
+    // RescuerDashboard.jsx - Add this function
+    const handleResolve = async (alertId) => {
+        try {
+            console.log(`✅ Resolving alert: ${alertId}`);
+            const token = localStorage.getItem('token');
+            
+            const response = await axios.patch(
+                `https://sos-alert-app-backend.onrender.com/alerts/${alertId}/resolve`,
+                {
+                    responder_type: responderType
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log("✅ Resolve successful:", response.data);
+            
+            // ✅ Update local state
+            setAlerts(prevAlerts => 
+                prevAlerts.map(alert => 
+                    alert.id === alertId 
+                        ? { ...alert, status: 'RESOLVED' }
+                        : alert
+                )
+            );
+            
+            // ✅ Refresh alerts from server
+            fetchActiveAlerts();
+            
+            alert('✅ Alert resolved successfully!');
+            
+        } catch (err) {
+            console.error("❌ Error resolving alert:", err);
+            alert(`❌ Error: ${err.response?.data?.detail || err.message}`);
+        }
+    };
+
+
+
+
+
+
+    
     // --- Component Render ---
     return (
         <div className="dashboard-wrapper bg-slate-900 font-sans">
@@ -746,7 +844,7 @@ const RescueDashboard = ({ responderType }) => {
                 </div> */}
 
 
-                // RescuerDashboard.jsx - Sidebar rendering
+                {/*RescuerDashboard.jsx - Sidebar rendering*/}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <h2 className="text-xs font-bold text-slate-500 uppercase px-2">
                         Active Emergencies ({alerts.filter(a => a.status !== 'RESOLVED').length})
