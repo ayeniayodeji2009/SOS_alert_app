@@ -8,6 +8,7 @@ const UserDashboard = () => {
     // ✅ Get user from localStorage
     const [user, setUser] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [error, setError] = useState(null);  // ✅ ADD THIS
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [wsConnected, setWsConnected] = useState(false);
@@ -139,8 +140,23 @@ const UserDashboard = () => {
         } catch (err) {
             console.error("❌ Error fetching alerts:", err);
             // ... error handling
+            if (err.response?.status === 404) {
+                console.log("No alerts found for this user");
+                setAlerts([]);
+                setError(null);  // ✅ 404 is not an error, just no data
+            } else if (err.response?.status === 401) {
+                console.error("Authentication failed, redirecting to login");
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setError('Session expired. Please login again.');
+                setTimeout(() => navigate('/login'), 3000);
+            } else {
+                setError('Failed to load alerts. Please refresh the page.');
+            }
+        } finally {
+            setLoading(false);
         }
-    }, [userId]);
+    }, [userId, navigate]);
 
     
 
@@ -451,7 +467,24 @@ const UserDashboard = () => {
         }
     };
 
-    // ✅ Render
+    // ✅ Render Error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+                <div className="text-center p-8 bg-red-900/20 rounded-xl border border-red-500">
+                    <h2 className="text-2xl font-bold text-red-500 mb-4">⚠️ Error</h2>
+                    <p className="text-gray-300">{error}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="mt-4 bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-6xl mx-auto p-6 bg-slate-900 min-h-screen text-white">
             <header className="mb-8 flex justify-between items-center flex-wrap gap-4">
