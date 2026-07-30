@@ -54,6 +54,8 @@ const UserDashboard = () => {
             // const token = localStorage.getItem('token');
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             
+            // ✅ Reset WebSocket connection state
+            setWsConnected(false);
             // ✅ Fetch alerts immediately after user is set
             fetchMyAlerts(id);
             
