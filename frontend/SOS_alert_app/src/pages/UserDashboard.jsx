@@ -442,9 +442,12 @@ const UserDashboard = () => {
 
     // ✅ Delete Alert - only after rescuer has resolved
     const deleteAlert = async (alertId) => {
-        if (!window.confirm('Are you sure you want to delete this alert?')) return;
+        if (!window.confirm('⚠️ Are you sure you want to delete this alert? This action cannot be undone.')) {
+            return;
+        }
         
         try {
+            console.log(`🗑️ Deleting alert: ${alertId}`);
             const token = localStorage.getItem('token');
             
             await axios.delete(
@@ -462,10 +465,14 @@ const UserDashboard = () => {
             alert('✅ Alert deleted successfully');
             
         } catch (err) {
-            console.error("Error deleting alert:", err);
-            alert(`Error: ${err.response?.data?.detail || "Failed to delete alert"}`);
+            console.error("❌ Error deleting alert:", err);
+            alert(`❌ Error: ${err.response?.data?.detail || err.message}`);
         }
     };
+
+
+
+
 
     // ✅ Render Error state
     if (error) {
@@ -485,7 +492,113 @@ const UserDashboard = () => {
         );
     }
 
-    return (
+    // return (
+    //     <div className="max-w-6xl mx-auto p-6 bg-slate-900 min-h-screen text-white">
+    //         <header className="mb-8 flex justify-between items-center flex-wrap gap-4">
+    //             <div>
+    //                 <h2 className="text-3xl font-bold flex items-center gap-3">
+    //                     <Shield className="text-red-500" size={32} /> SOS Center
+    //                 </h2>
+    //                 <p className="text-sm text-slate-400 mt-1">
+    //                     Welcome, {user?.username || 'User'}! 
+    //                     WebSocket: {wsConnected ? "🟢 Connected" : "🔴 Disconnected"}
+    //                 </p>
+    //                 {nearestStation && (
+    //                     <p className="text-xs text-blue-400 mt-1">
+    //                         📍 Nearest Station: {nearestStation.name} ({nearestStation.area_command})
+    //                     </p>
+    //                 )}
+    //             </div>
+    //             <button 
+    //                 onClick={triggerSOS} 
+    //                 className="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-full font-black animate-bounce shadow-2xl transition-all hover:scale-105"
+    //             >
+    //                 🚨 TRIGGER SOS
+    //             </button>
+    //         </header>
+
+    //         <div className="overflow-x-auto bg-slate-800 rounded-xl border border-slate-700">
+    //             <table className="w-full text-left">
+    //                 <thead>
+    //                     <tr className="bg-slate-700 text-slate-300 text-xs uppercase">
+    //                         <th className="p-4">Incident</th>
+    //                         <th className="p-4">Time</th>
+    //                         <th className="p-4">Status</th>
+    //                         <th className="p-4">Rescuer</th>
+    //                         <th className="p-4 text-center">Action</th>
+    //                     </tr>
+    //                 </thead>
+    //                 <tbody>
+    //                     {alerts.length === 0 ? (
+    //                         <tr>
+    //                             <td colSpan="5" className="p-10 text-center text-slate-500">
+    //                                 No records found. Click the SOS button to send an alert.
+    //                             </td>
+    //                         </tr>
+    //                     ) : (
+    //                         alerts.map((alert) => (
+    //                             <tr key={alert.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+    //                                 <td className="p-4 font-mono text-blue-400">#{alert.id}</td>
+    //                                 <td className="p-4 text-sm">
+    //                                     {new Date(alert.created_at).toLocaleString()}
+    //                                 </td>
+    //                                 <td className="p-4">
+    //                                     <span className={`px-2 py-1 rounded text-[10px] font-bold ${
+    //                                         alert.status === 'HELP_ON_THE_WAY' ? 'bg-blue-500' :
+    //                                         alert.status === 'RESOLVED' ? 'bg-green-500' :
+    //                                         alert.status === 'ASSIGNED' ? 'bg-yellow-500' :
+    //                                         'bg-red-500'
+    //                                     }`}>
+    //                                         {alert.status}
+    //                                     </span>
+    //                                 </td>
+    //                                 <td className="p-4 text-sm">
+    //                                     {alert.claimed_by_type || alert.assigned_to || 'Searching...'}
+    //                                     {alert.responder_name && ` (${alert.responder_name})`}
+    //                                 </td>
+    //                                 <td className="p-4 text-center">
+    //                                     {/* ✅ Disable button if already confirmed or loading */}
+    //                                     {alert.status === 'HELP_ON_THE_WAY' && !alert.user_confirmed_arrival ? (
+    //                                         <button 
+    //                                             onClick={() => confirmArrival(alert.id)} 
+    //                                             disabled={loadingActions[alert.id]}
+    //                                             className={`bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors ${
+    //                                                 loadingActions[alert.id] ? 'opacity-50 cursor-not-allowed' : ''
+    //                                             }`}
+    //                                         >
+    //                                             {loadingActions[alert.id] ? '⏳...' : '✅ Arrived?'}
+    //                                         </button>
+    //                                     ) : alert.user_confirmed_arrival ? (
+    //                                         <span className="text-green-500 flex items-center gap-1 justify-center">
+    //                                             <CheckCircle size={16} /> Verified
+    //                                         </span>
+    //                                     ) : alert.status === 'PENDING' ? (
+    //                                         <span className="text-yellow-500">Waiting for responder...</span>
+    //                                     ) : alert.status === 'RESOLVED' ? (
+    //                                         <span className="text-green-500">✅ Resolved</span>
+    //                                     ) : "—"}
+    //                                 </td>
+    //                                 <td className="p-4 text-center">
+    //                                     {/* ✅ Delete button only if resolved */}
+    //                                     {alert.status === 'RESOLVED' && (
+    //                                         <button 
+    //                                             onClick={() => deleteAlert(alert.id)} 
+    //                                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors"
+    //                                         >
+    //                                             🗑️ Delete
+    //                                         </button>
+    //                                     )}
+    //                                 </td>
+    //                             </tr>
+    //                         ))
+    //                     )}
+    //                 </tbody>
+    //             </table>
+    //         </div>
+    //     </div>
+    // );
+
+        return (
         <div className="max-w-6xl mx-auto p-6 bg-slate-900 min-h-screen text-white">
             <header className="mb-8 flex justify-between items-center flex-wrap gap-4">
                 <div>
@@ -519,12 +632,13 @@ const UserDashboard = () => {
                             <th className="p-4">Status</th>
                             <th className="p-4">Rescuer</th>
                             <th className="p-4 text-center">Action</th>
+                            <th className="p-4 text-center">Delete</th> {/* ✅ Added Delete header */}
                         </tr>
                     </thead>
                     <tbody>
                         {alerts.length === 0 ? (
                             <tr>
-                                <td colSpan="5" className="p-10 text-center text-slate-500">
+                                <td colSpan="6" className="p-10 text-center text-slate-500"> {/* ✅ Changed colSpan to 6 */}
                                     No records found. Click the SOS button to send an alert.
                                 </td>
                             </tr>
@@ -550,7 +664,7 @@ const UserDashboard = () => {
                                         {alert.responder_name && ` (${alert.responder_name})`}
                                     </td>
                                     <td className="p-4 text-center">
-                                        {/* ✅ Disable button if already confirmed or loading */}
+                                        {/* Action button */}
                                         {alert.status === 'HELP_ON_THE_WAY' && !alert.user_confirmed_arrival ? (
                                             <button 
                                                 onClick={() => confirmArrival(alert.id)} 
@@ -566,7 +680,7 @@ const UserDashboard = () => {
                                                 <CheckCircle size={16} /> Verified
                                             </span>
                                         ) : alert.status === 'PENDING' ? (
-                                            <span className="text-yellow-500">Waiting for responder...</span>
+                                            <span className="text-yellow-500">⏳ Waiting for responder...</span>
                                         ) : alert.status === 'RESOLVED' ? (
                                             <span className="text-green-500">✅ Resolved</span>
                                         ) : "—"}
