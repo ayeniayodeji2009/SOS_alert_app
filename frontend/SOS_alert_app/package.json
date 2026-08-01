@@ -12,7 +12,7 @@
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
     "autoprefixer": "^10.4.23",
-    "axios": "^1.13.4",
+    "axios": "^1.18.0",
     "framer-motion": "^12.36.0",
     "leaflet": "^1.9.4",
     "leaflet-routing-machine": "^3.2.12",
