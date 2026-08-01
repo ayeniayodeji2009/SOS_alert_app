@@ -625,7 +625,145 @@ const UserDashboard = () => {
 
             <div className="overflow-x-auto bg-slate-800 rounded-xl border border-slate-700">
                 <table className="w-full text-left">
+                    // Table Header
                     <thead>
+                        <tr className="bg-slate-700 text-slate-300 text-xs uppercase">
+                            <th className="p-4">Incident</th>
+                            <th className="p-4">Time</th>
+                            <th className="p-4">Status</th>
+                            <th className="p-4">Rescuer</th>
+                            <th className="p-4 text-center">Action</th>
+                            <th className="p-4 text-center">Delete</th> {/* ✅ Separate Delete column */}
+                        </tr>
+                    </thead>
+
+                    // Table Body
+                    <tbody>
+                        {alerts.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="p-10 text-center text-slate-500">
+                                    No records found. Click the SOS button to send an alert.
+                                </td>
+                            </tr>
+                        ) : (
+                            alerts.map((alert) => (
+                                <tr key={alert.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                                    <td className="p-4 font-mono text-blue-400">#{alert.id}</td>
+                                    <td className="p-4 text-sm">
+                                        {new Date(alert.created_at).toLocaleString()}
+                                    </td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${
+                                            alert.status === 'HELP_ON_THE_WAY' ? 'bg-blue-500' :
+                                            alert.status === 'RESOLVED' ? 'bg-green-500' :
+                                            alert.status === 'ASSIGNED' ? 'bg-yellow-500' :
+                                            'bg-red-500'
+                                        }`}>
+                                            {alert.status}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-sm">
+                                        {alert.claimed_by_type || alert.assigned_to || 'Searching...'}
+                                        {alert.responder_name && ` (${alert.responder_name})`}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        {alert.status === 'HELP_ON_THE_WAY' && !alert.user_confirmed_arrival ? (
+                                            <button 
+                                                onClick={() => confirmArrival(alert.id)} 
+                                                disabled={loadingActions[alert.id]}
+                                                className={`bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs transition-colors ${
+                                                    loadingActions[alert.id] ? 'opacity-50 cursor-not-allowed' : ''
+                                                }`}
+                                            >
+                                                {loadingActions[alert.id] ? '⏳...' : '✅ Arrived?'}
+                                            </button>
+                                        ) : alert.user_confirmed_arrival && alert.status !== 'RESOLVED' ? (
+                                            <span className="text-yellow-500 flex items-center gap-1 justify-center">
+                                                ⏳ Waiting for rescue...
+                                            </span>
+                                        ) : alert.status === 'RESOLVED' ? (
+                                            <span className="text-green-500 flex items-center gap-1 justify-center">
+                                                <CheckCircle size={16} /> Resolved
+                                            </span>
+                                        ) : alert.status === 'PENDING' ? (
+                                            <span className="text-yellow-500">⏳ Waiting for responder...</span>
+                                        ) : "—"}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        {/* ✅ Delete button - only shows when status is RESOLVED */}
+                                        {alert.status === 'RESOLVED' && (
+                                            <button 
+                                                onClick={() => deleteAlert(alert.id)} 
+                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                                            >
+                                                🗑️ Delete
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+export default UserDashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{/*                     <thead>
                         <tr className="bg-slate-700 text-slate-300 text-xs uppercase">
                             <th className="p-4">Incident</th>
                             <th className="p-4">Time</th>
@@ -699,67 +837,7 @@ const UserDashboard = () => {
                                 </tr>
                             ))
                         )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-export default UserDashboard;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    </tbody> */}
 
 
 
