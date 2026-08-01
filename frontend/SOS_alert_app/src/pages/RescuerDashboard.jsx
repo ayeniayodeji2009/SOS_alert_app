@@ -190,6 +190,7 @@ const LiveTracking = ({ userPos, responderPos, responderName, responderType, col
         
         return () => clearInterval(interval);
     }, [map, userPos, responderPos]);
+    console.log("📍 LiveTracking - Current Pos:", currentPos, "User Pos:", userPos, "Responder Name:", responderName, "Type:", responderType);
     
     return (
         <>

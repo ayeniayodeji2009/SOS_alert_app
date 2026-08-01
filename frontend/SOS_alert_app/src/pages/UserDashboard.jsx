@@ -628,7 +628,7 @@ const UserDashboard = () => {
 
         <div className="overflow-x-auto bg-slate-800 rounded-xl border border-slate-700">
             <table className="w-full text-left">
-                // Table Header
+                {/**Table Header */}
                 <thead>
                     <tr className="bg-slate-700 text-slate-300 text-xs uppercase">
                         <th className="p-4">Incident</th>
@@ -640,7 +640,7 @@ const UserDashboard = () => {
                     </tr>
                 </thead>
 
-                // Table Body
+                {/**Table Body */}
                 <tbody>
                     {alerts.length === 0 ? (
                         <tr>
